@@ -5,15 +5,12 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.Light.Point;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -27,6 +24,7 @@ import org.apache.commons.io.FilenameUtils;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
+import pl.betweenthelines.pikasso.window.domain.operation.NegationWindow;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -93,7 +91,7 @@ public class MainWindow {
         selection = new Rectangle(0, 0, 0, 0);
         Paint fill = Color.rgb(69, 69, 69, 0.2);
         selection.setFill(fill);
-//        Paint stroke = Color.rgb(69, 69, 69, 1);
+
         Paint stroke = Color.WHITE;
         selection.setStroke(stroke);
         selection.getStrokeDashArray().add(10.0);
@@ -151,8 +149,10 @@ public class MainWindow {
             if (height > 2 && width > 2) {
                 Image imageSelection = getImageSelection(imageView, selection.getX(), selection.getY(), selection.getWidth(), selection.getHeight());
                 openedFileData.setImageSelection(imageSelection);
+                openedFileData.setSelection(selection);
             } else {
                 openedFileData.setImageSelection(null);
+                openedFileData.setSelection(null);
             }
         });
     }
@@ -165,6 +165,26 @@ public class MainWindow {
 
     private Menu createOperationsMenu() {
         Menu operationsMenu = new Menu("Operacje");
+        MenuItem desaturate = createDesaturationItem();
+
+        SeparatorMenuItem separator1 = new SeparatorMenuItem();
+        Menu oneArg = new Menu("Jednoargumentowe");
+        MenuItem negation = new MenuItem("Negacja");
+        negation.setOnAction(event -> {
+            try {
+                NegationWindow negationWindow = new NegationWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        oneArg.getItems().addAll(negation);
+
+        operationsMenu.getItems().addAll(desaturate, separator1, oneArg);
+        return operationsMenu;
+    }
+
+    private MenuItem createDesaturationItem() {
         MenuItem desaturate = new MenuItem("Desaturacja");
         enabledWhenFileOpended.add(desaturate);
         desaturate.setOnAction(new EventHandler<ActionEvent>() {
@@ -174,9 +194,7 @@ public class MainWindow {
                 imageView.setEffect(colorAdjust);
             }
         });
-
-        operationsMenu.getItems().addAll(desaturate);
-        return operationsMenu;
+        return desaturate;
     }
 
     private void createMainStage() {
@@ -200,9 +218,9 @@ public class MainWindow {
         zoomSlider.setMin(0.1);
         zoomSlider.setValue(1);
         zoomSlider.setMax(4);
-        Label sliderValue = new Label(String.valueOf((int) (zoomSlider.getValue() * 100) + "%"));
+        Label sliderValue = new Label((int) (zoomSlider.getValue() * 100) + "%");
         zoomSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            sliderValue.setText(String.valueOf((int) (zoomSlider.getValue() * 100) + "%"));
+            sliderValue.setText((int) (zoomSlider.getValue() * 100) + "%");
             resetSelection();
         });
         return sliderValue;
@@ -375,7 +393,7 @@ public class MainWindow {
         imageView.fitHeightProperty().bind(zoomSlider.valueProperty().multiply(image.getHeight()));
         imageView.setImage(image);
         zoomSlider.setValue(calculateZoom(image));
-        openedFileData = new FileData(file, imageView, null);
+        openedFileData = new FileData(file, imageView, null, null);
         lastDirectory = file.getParentFile();
     }
 

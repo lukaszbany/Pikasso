@@ -1,38 +1,38 @@
-.chart-series-line {
+.chart-bar {
     -fx-stroke-width: 1;
+
 }
 
-.default-color0.chart-series-line {
-    -fx-stroke: rgba(255, 0, 0, 1.0);
+.default-color0.chart-bar {
+    -fx-bar-fill: rgba(255, 0, 0, 1.0);
 }
 
-.red-unselected .default-color0.chart-series-line {
-    -fx-stroke: rgba(255, 0, 0, 0);
+.red-unselected .default-color0.chart-bar {
+    -fx-bar-fill: rgba(255, 0, 0, 0);
 }
 
-.default-color1.chart-series-line {
-    -fx-stroke: rgba(0, 255, 0, 1.0);
+.default-color1.chart-bar {
+    -fx-bar-fill: rgba(0, 255, 0, 1.0);
 }
 
-.green-unselected .default-color1.chart-series-line {
-    -fx-stroke: rgba(0, 255, 0, 0);
+.green-unselected .default-color1.chart-bar {
+    -fx-bar-fill: rgba(0, 255, 0, 0);
 }
 
-.default-color2.chart-series-line {
-    -fx-stroke: rgba(0, 0, 255, 1.0);
+.default-color2.chart-bar {
+    -fx-bar-fill: rgba(0, 0, 255, 1.0);
 }
 
-.blue-unselected .default-color2.chart-series-line {
-    -fx-stroke: rgba(0, 0, 255, 0);
+.blue-unselected .default-color2.chart-bar {
+    -fx-bar-fill: rgba(0, 0, 255, 0);
 }
 
-.default-color3.chart-series-line {
-    -fx-stroke: rgba(0, 0, 0, 1.0);
-    -fx-stroke-width: 1;
+.default-color3.chart-bar {
+    -fx-bar-fill: rgba(0, 0, 0, 1.0);
 }
 
-.gray-unselected .default-color3.chart-series-line {
-    -fx-stroke: rgba(0, 0, 0, 0);
+.gray-unselected .default-color3.chart-bar {
+    -fx-bar-fill: rgba(0, 0, 0, 0);
 }
 
 .frame {

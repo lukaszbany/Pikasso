@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 @Getter
 public class ChannelProperties {
@@ -51,13 +50,13 @@ public class ChannelProperties {
 
     public void calculateParameters() {
         int pixelsInRange = 0;
-        for (int i = minLevel; i < maxLevel; i++) {
+        for (int i = minLevel; i <= maxLevel; i++) {
             pixelsInRange += pixels[i];
         }
 
         double[] dpixels = new double[pixelsInRange];
         int count = 0;
-        for (int i = minLevel; i < maxLevel; i++) {
+        for (int i = minLevel; i <= maxLevel; i++) {
             for (int j = 0; j < pixels[i]; j++) {
                 dpixels[count] = i;
                 count++;
@@ -65,7 +64,12 @@ public class ChannelProperties {
         }
 
         int middle = pixelsInRange / 2;
-        if (pixelsInRange % 2 == 0) {
+        if (pixelsInRange < 2) {
+            this.median = 0;
+            this.mean = 0;
+            this.standardDeviation = 0;
+            return;
+        } else if (pixelsInRange % 2 == 0) {
             this.median = (dpixels[middle] + dpixels[middle + 1]) / 2;
         } else {
             this.median = dpixels[middle];

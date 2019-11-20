@@ -3,12 +3,17 @@ package pl.betweenthelines.pikasso.utils;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.SnapshotParameters;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.image.WritableImage;
+import javafx.scene.image.*;
 import javafx.scene.paint.Color;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.nio.ByteBuffer;
 
 public class ImageUtils {
     public static BufferedImage getBufferedImage(ImageView imageView) {
@@ -29,5 +34,35 @@ public class ImageUtils {
         imageView.snapshot(snapshotParameters, imageSelection);
 
         return imageSelection;
+    }
+
+    public static Mat imageToMat(Image image) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        byte[] buffer = new byte[width * height * 4];
+
+        PixelReader reader = image.getPixelReader();
+        WritablePixelFormat<ByteBuffer> format = WritablePixelFormat.getByteBgraInstance();
+        reader.getPixels(0, 0, width, height, format, buffer, 0, width * 4);
+
+        Mat mat = new Mat(height, width, CvType.CV_8UC4);
+        mat.put(0, 0, buffer);
+
+        return mat;
+    }
+
+    public static Image mat2Image(Mat frame) {
+        MatOfByte buffer = new MatOfByte();
+        Imgcodecs.imencode(".png", frame, buffer);
+
+        return new Image(new ByteArrayInputStream(buffer.toArray()));
+    }
+
+    public static Image toGrayscale(Image image) {
+        Mat inImage = ImageUtils.imageToMat(image);
+        Mat outImage = new Mat();
+        Imgproc.cvtColor(inImage, outImage, Imgproc.COLOR_BGR2GRAY);
+
+        return ImageUtils.mat2Image(outImage);
     }
 }

@@ -1,14 +1,13 @@
 package pl.betweenthelines.pikasso.window;
 
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -16,7 +15,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-import lombok.Setter;
 import org.controlsfx.control.RangeSlider;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.exception.ImageIsTooBigException;
@@ -24,12 +22,13 @@ import pl.betweenthelines.pikasso.exception.ImageNotLoadedYetException;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 import pl.betweenthelines.pikasso.window.domain.histogram.ChannelProperties;
+import pl.betweenthelines.pikasso.window.domain.histogram.EqualizeHistogram;
 import pl.betweenthelines.pikasso.window.domain.histogram.Histogram;
+import pl.betweenthelines.pikasso.window.domain.histogram.StretchHistogram;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
 
-import static pl.betweenthelines.pikasso.utils.ImageUtils.getFxImage;
 import static pl.betweenthelines.pikasso.window.domain.histogram.ChannelProperties.Channel.*;
 
 public class HistogramWindow implements Window {
@@ -41,21 +40,32 @@ public class HistogramWindow implements Window {
     private Stage histogramStage;
     private HBox histogramHBox;
     private VBox optionsWrapper;
-    private LineChart<String, Number> chart;
+    private BarChart<String, Number> chart;
     private Histogram histogram;
     private ImageView imagePreview;
     private FileData openedFileData;
+
+    CheckBox redCheckbox;
+    CheckBox greenCheckbox;
+    CheckBox blueCheckbox;
+    CheckBox grayCheckbox;
 
     public HistogramWindow(FileData openedFileData) throws ImageNotLoadedYetException, IOException, ImageIsTooBigException {
         CategoryAxis xAxis = new CategoryAxis();
         xAxis.setAnimated(false);
         NumberAxis yAxis = new NumberAxis();
         yAxis.setAnimated(false);
-        chart = new LineChart<>(xAxis, yAxis);
+        chart = new BarChart<>(xAxis, yAxis);
+        chart.setBarGap(0);
         this.openedFileData = openedFileData;
 
         histogramStage = new Stage();
         histogramHBox = new HBox();
+
+        redCheckbox = createChannelVisibilityCheckbox(RED);
+        greenCheckbox = createChannelVisibilityCheckbox(GREEN);
+        blueCheckbox = createChannelVisibilityCheckbox(BLUE);
+        grayCheckbox = createChannelVisibilityCheckbox(GRAY);
 
         reloadHistogram(MIN_LEVEL, MAX_LEVEL);
 
@@ -83,7 +93,7 @@ public class HistogramWindow implements Window {
         VBox histogramVBox = new VBox();
         histogramVBox.getStyleClass().add("frame");
 
-        chart.setCreateSymbols(false);
+//        chart.setCreateSymbols(false);
         chart.setLegendVisible(false);
         chart.setHorizontalGridLinesVisible(false);
         chart.setVerticalGridLinesVisible(false);
@@ -145,33 +155,31 @@ public class HistogramWindow implements Window {
         imagePreview.setPreserveRatio(true);
         imagePreview.setFitHeight(80);
         imagePreview.setFitWidth(142);
+        Separator separator0 = new Separator();
 
         Label pixelSum = new Label("Razem pikseli:\n" + histogram.getPixelsTotal());
-        Separator separator0 = new Separator();
-        CheckBox redCheckbox = createChannelVisibilityCheckbox(RED);
+        Separator separator1 = new Separator();
+
         Label redMedian = new Label("Mediana: " + histogram.getRed().getMedian());
         Label redMean = new Label("Średnia: " + FORMATTER.format(histogram.getRed().getMean()));
         Label redSD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getRed().getStandardDeviation()));
-        Separator separator1 = new Separator();
+        Separator separator2 = new Separator();
 
-        CheckBox greenCheckbox = createChannelVisibilityCheckbox(GREEN);
         Label greenMedian = new Label("Mediana: " + histogram.getGreen().getMedian());
         Label greenMean = new Label("Średnia: " + FORMATTER.format(histogram.getGreen().getMean()));
         Label greenSD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getGreen().getStandardDeviation()));
-        Separator separator2 = new Separator();
+        Separator separator3 = new Separator();
 
-        CheckBox blueCheckbox = createChannelVisibilityCheckbox(BLUE);
         Label blueMedian = new Label("Mediana: " + histogram.getBlue().getMedian());
         Label blueMean = new Label("Średnia: " + FORMATTER.format(histogram.getBlue().getMean()));
         Label blueSD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getBlue().getStandardDeviation()));
-        Separator separator3 = new Separator();
+        Separator separator4 = new Separator();
 
-        CheckBox grayCheckbox = createChannelVisibilityCheckbox(GRAY);
         Label grayMedian = new Label("Mediana: " + histogram.getGray().getMedian());
         Label grayMean = new Label("Średnia: " + FORMATTER.format(histogram.getGray().getMean()));
         Label graySD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getGray().getStandardDeviation()));
 
-        Separator separator4 = new Separator();
+        Separator separator5 = new Separator();
 
         Label meanColorLabel = new Label("Średni kolor: ");
 
@@ -189,15 +197,55 @@ public class HistogramWindow implements Window {
         VBox meanColorVBox = new VBox(meanColor, hexColorLabel);
         meanColorVBox.setAlignment(Pos.CENTER);
 
+        Separator separator6 = new Separator();
 
-        optionsVBox.getChildren().addAll(imagePreview, pixelSum, separator0,
-                redCheckbox, redMedian, redMean, redSD, separator1,
-                greenCheckbox, greenMedian, greenMean, greenSD, separator2,
-                blueCheckbox, blueMedian, blueMean, blueSD, separator3,
-                grayCheckbox, grayMedian, grayMean, graySD, separator4,
-                meanColorLabel, meanColorVBox);
+        Button stretchHistogram = createStretchHistogramButton();
+        Button equalizeHistogram = createEqualizeHistogramButton();
+
+        optionsVBox.getChildren().addAll(imagePreview, separator0,
+                pixelSum, separator1,
+                redCheckbox, redMedian, redMean, redSD, separator2,
+                greenCheckbox, greenMedian, greenMean, greenSD, separator3,
+                blueCheckbox, blueMedian, blueMean, blueSD, separator4,
+                grayCheckbox, grayMedian, grayMean, graySD, separator5,
+                meanColorLabel, meanColorVBox, separator6,
+                stretchHistogram, equalizeHistogram);
 
         return optionsVBox;
+    }
+
+    private Button createStretchHistogramButton() {
+        Button stretchHistogram = new Button("Rozciągnij histogram");
+        stretchHistogram.setOnAction(event -> {
+            try {
+                Image newImage = StretchHistogram.stretchHistogram(openedFileData, histogram);
+                openedFileData.getImageView().setImage(newImage);
+                reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        return stretchHistogram;
+    }
+
+    private Button createEqualizeHistogramButton() {
+        Button equalizeHistogram = new Button("Wyrównaj histogram");
+        equalizeHistogram.setOnAction(event -> {
+            try {
+                openedFileData.setSelection(null);
+                openedFileData.setImageSelection(null);
+                reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+
+                Image newImage = EqualizeHistogram.equalizeHistogram(openedFileData, histogram);
+                openedFileData.getImageView().setImage(newImage);
+                reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        return equalizeHistogram;
     }
 
     private void reloadHistogram(int minLevel, int maxLevel) throws ImageIsTooBigException, IOException, ImageNotLoadedYetException {
@@ -209,7 +257,6 @@ public class HistogramWindow implements Window {
                 histogram.getBlue().getSeries(),
                 histogram.getGray().getSeries()
         );
-
     }
 
     private Image getImage() {
@@ -221,13 +268,9 @@ public class HistogramWindow implements Window {
     }
 
     private String getHexColor(double red, double green, double blue) {
-        StringBuilder sb = new StringBuilder("#");
-
-        sb.append(Integer.toHexString((int) red));
-        sb.append(Integer.toHexString((int) green));
-        sb.append(Integer.toHexString((int) blue));
-
-        return sb.toString();
+        return "#" + Integer.toHexString((int) red) +
+                Integer.toHexString((int) green) +
+                Integer.toHexString((int) blue);
     }
 
     private CheckBox createChannelVisibilityCheckbox(ChannelProperties.Channel channel) {
@@ -238,7 +281,6 @@ public class HistogramWindow implements Window {
                 chart.getStyleClass().remove(channel.getUncheckedClass());
             } else {
                 chart.getStyleClass().add(channel.getUncheckedClass());
-
             }
         });
         return checkBox;
