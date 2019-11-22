@@ -25,6 +25,9 @@ import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 import pl.betweenthelines.pikasso.window.domain.operation.NegationWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.PosterizeWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.StretchToRangeWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.ThresholdOneArgWindow;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -177,8 +180,32 @@ public class MainWindow {
                 ErrorHandler.handleError(e);
             }
         });
+        MenuItem thresholdOneArg = new MenuItem("Progowanie");
+        thresholdOneArg.setOnAction(event -> {
+            try {
+                ThresholdOneArgWindow thresholdOneArgWindow = new ThresholdOneArgWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+        MenuItem posterize = new MenuItem("Posteryzacja");
+        posterize.setOnAction(event -> {
+            try {
+                PosterizeWindow posterizeWindow = new PosterizeWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+        MenuItem stretchToRange = new MenuItem("Rozciąganie do poziomów jasności");
+        stretchToRange.setOnAction(event -> {
+            try {
+                StretchToRangeWindow stretchToRangeWindow = new StretchToRangeWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
 
-        oneArg.getItems().addAll(negation);
+        oneArg.getItems().addAll(negation, thresholdOneArg, posterize, stretchToRange);
 
         operationsMenu.getItems().addAll(desaturate, separator1, oneArg);
         return operationsMenu;
