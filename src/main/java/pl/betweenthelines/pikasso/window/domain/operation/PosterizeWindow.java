@@ -102,7 +102,8 @@ public class PosterizeWindow {
         BufferedImage resultImage = new BufferedImage((int) before.getWidth(), (int) before.getHeight(), BufferedImage.TYPE_INT_RGB);
         PixelReader pixelReader = before.getPixelReader();
 
-        int multiplier = 255 / (int) currentLevel;
+        int multiplier = 255 / (int) (currentLevel - 1);
+        int divider = 255 / (int) currentLevel;
 
         for (int y = 0; y < before.getHeight(); y++) {
             for (int x = 0; x < before.getWidth(); x++) {
@@ -112,9 +113,9 @@ public class PosterizeWindow {
                 int g = (0xff & (argb >> 8));
                 int b = (0xff & argb);
 
-                int newR = calculateLevel(r, multiplier);
-                int newG = calculateLevel(g, multiplier);
-                int newB = calculateLevel(b, multiplier);
+                int newR = calculateLevel(r, multiplier, divider);
+                int newG = calculateLevel(g, multiplier, divider);
+                int newB = calculateLevel(b, multiplier, divider);
 
                 int newArgb = (a << 24) | (newR << 16) | (newG << 8) | newB;
 
@@ -125,10 +126,10 @@ public class PosterizeWindow {
         return SwingFXUtils.toFXImage(resultImage, null);
     }
 
-    private int calculateLevel(int oldLevel, int multiplier) {
+    private int calculateLevel(int oldLevel, int multiplier, int divider) {
         int newLevel = 0;
 
-        while (oldLevel > multiplier) {
+        while (oldLevel > divider) {
             oldLevel -= multiplier;
             newLevel += multiplier;
         }
