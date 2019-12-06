@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.linear;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -16,7 +16,7 @@ import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.mask.Mask3x3;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,8 +25,8 @@ import static javafx.geometry.Orientation.VERTICAL;
 import static org.opencv.core.Core.BORDER_CONSTANT;
 import static org.opencv.core.Core.BORDER_DEFAULT;
 import static org.opencv.core.CvType.CV_32F;
-import static pl.betweenthelines.pikasso.window.domain.operation.mask.LinearFilters.SMOOTH_1;
-import static pl.betweenthelines.pikasso.window.domain.operation.mask.LinearFilters.SMOOTH_2;
+import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SMOOTH_1;
+import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SMOOTH_2;
 
 public class SmoothLinearWindow {
 
@@ -34,6 +34,7 @@ public class SmoothLinearWindow {
     private static final double DEFAULT = 1;
     private static final double MAX_LEVEL = 16;
     private static final int OPTIONS_HEIGHT = 110;
+    private static final int MINIMAL_WIDTH = 700;
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -77,7 +78,12 @@ public class SmoothLinearWindow {
         createBeforeImageView();
         createAfterImageView();
 
-        hBox = new HBox(beforeImageView, afterImageView);
+        HBox beforeImageViewHbox = new HBox(beforeImageView);
+        beforeImageViewHbox.setAlignment(Pos.CENTER);
+        HBox afterImageViewHbox = new HBox(afterImageView);
+        afterImageViewHbox.setAlignment(Pos.CENTER);
+        hBox = new HBox(beforeImageViewHbox, afterImageViewHbox);
+        hBox.setAlignment(Pos.CENTER);
 
         Button cancel = new Button("Odrzuć");
         cancel.setOnAction(event -> {
@@ -120,9 +126,11 @@ public class SmoothLinearWindow {
         buttons.setAlignment(Pos.CENTER_RIGHT);
         vBox = new VBox(hBox, buttons);
 
-        double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
+        double windowWidth = Math.max(MINIMAL_WIDTH, afterImageView.getBoundsInLocal().getWidth() * 2);
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + OPTIONS_HEIGHT;
         Scene scene = new Scene(vBox, windowWidth, windowHeight);
+        beforeImageViewHbox.setPrefWidth(windowWidth / 2);
+        afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
         stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);

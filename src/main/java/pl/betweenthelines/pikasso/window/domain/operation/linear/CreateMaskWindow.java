@@ -1,5 +1,7 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.linear;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,18 +17,20 @@ import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.mask.Mask3x3;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import static javafx.geometry.Orientation.VERTICAL;
-import static pl.betweenthelines.pikasso.window.domain.operation.ScalingUtils.*;
-import static pl.betweenthelines.pikasso.window.domain.operation.mask.LinearFilters.*;
+import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SHARPEN_1;
 
-public class EdgeDetectionWindow {
+public class CreateMaskWindow {
 
-    private static final int OPTIONS_HEIGHT = 160;
+    private static final int OPTIONS_HEIGHT = 90;
+    private static final int MINIMAL_WIDTH = 600;
+    private static final String X = "X";
+    private static final String DEAFAULT_MASK_LABEL = String.format("%4s%4s%4s\n%4s%4s%4s\n%4s%4s%4s", X, X, X, X, X, X, X, X, X);
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -39,31 +43,38 @@ public class EdgeDetectionWindow {
     private Image after;
     private double times;
 
-    private List<Mask3x3> masks;
     private Mask3x3 currentMask;
     private int currentBorderType;
-    private byte currentScalingMethod;
+    private ObservableList<Integer> availableValues;
 
-    public EdgeDetectionWindow(FileData openedFileData) {
+    public CreateMaskWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
-        masks = Arrays.asList(EDGE_DETECTION_1, EDGE_DETECTION_2, EDGE_DETECTION_3);
+        availableValues = FXCollections.observableArrayList();
+        for (int j = -20; j <= 20; j++) availableValues.add(j);
 
-        ToggleGroup options = new ToggleGroup();
-        RadioButton mask1 = createMaskRadioButton(options, EDGE_DETECTION_1);
-        RadioButton mask2 = createMaskRadioButton(options, EDGE_DETECTION_2);
-        RadioButton mask3 = createMaskRadioButton(options, EDGE_DETECTION_3);
-        mask1.setSelected(true);
-        handleOptionChanges(options);
+        List<Spinner<Integer>> spinners = createSpinners();
+        HBox spinner1Hbox = new HBox(spinners.get(0), spinners.get(1), spinners.get(2));
+        HBox spinner2Hbox = new HBox(spinners.get(3), spinners.get(4), spinners.get(5));
+        HBox spinner3Hbox = new HBox(spinners.get(6), spinners.get(7), spinners.get(8));
+        VBox vBox = new VBox(spinner1Hbox, spinner2Hbox, spinner3Hbox);
+        vBox.setPrefWidth(180);
+        HBox createMaskHBox = new HBox(vBox);
+        createMaskHBox.setAlignment(Pos.CENTER);
+        createMaskHBox.setPrefWidth(200);
 
-        currentMask = EDGE_DETECTION_1;
+        currentMask = new Mask3x3("DEFAULT", false, 1, 1, 1, 1, 1, 1, 1, 1, 1);
         currentBorderType = Core.BORDER_CONSTANT;
-        currentScalingMethod = METHOD_3;
         times = 1;
 
         createBeforeImageView();
         createAfterImageView();
 
-        hBox = new HBox(beforeImageView, afterImageView);
+        HBox beforeImageViewHbox = new HBox(beforeImageView);
+        beforeImageViewHbox.setAlignment(Pos.CENTER);
+        HBox afterImageViewHbox = new HBox(afterImageView);
+        afterImageViewHbox.setAlignment(Pos.CENTER);
+        hBox = new HBox(beforeImageViewHbox, afterImageViewHbox);
+        hBox.setAlignment(Pos.CENTER);
 
         Button cancel = new Button("Odrzuć");
         cancel.setOnAction(event -> {
@@ -92,35 +103,51 @@ public class EdgeDetectionWindow {
         VBox buttonsTimesVbox = new VBox(timesSliderHBox, buttonsHbox);
         buttonsTimesVbox.setAlignment(Pos.CENTER_RIGHT);
         buttonsTimesVbox.setSpacing(15);
-
         VBox borderVBox = createBorderOptions();
-        VBox scalingVBox = createScalingOptions();
 
-        HBox masksHBox = new HBox(mask1, mask2, mask3);
-        masksHBox.setSpacing(15);
-        masksHBox.setAlignment(Pos.CENTER);
-        masksHBox.setPrefHeight(60);
-        HBox radioHBox = new HBox(borderVBox, new Separator(VERTICAL), scalingVBox);
-        radioHBox.setSpacing(15);
-
-        HBox buttons = new HBox(new VBox(masksHBox, new Separator(), radioHBox), new Separator(VERTICAL), buttonsTimesVbox);
+        HBox buttons = new HBox(createMaskHBox, new Separator(VERTICAL), borderVBox, new Separator(VERTICAL), buttonsTimesVbox);
         buttons.setPadding(new Insets(13, 10, 10, 0));
         buttons.setSpacing(15);
         buttons.setMaxHeight(OPTIONS_HEIGHT);
         buttons.setAlignment(Pos.CENTER_RIGHT);
         vBox = new VBox(hBox, buttons);
 
-        double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
+        double windowWidth = Math.max(MINIMAL_WIDTH, afterImageView.getBoundsInLocal().getWidth() * 2);
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + OPTIONS_HEIGHT;
         Scene scene = new Scene(vBox, windowWidth, windowHeight);
+        beforeImageViewHbox.setPrefWidth(windowWidth / 2);
+        afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
         stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
 
         stage.setScene(scene);
-        stage.setTitle("Detekcja krawędzi");
+        stage.setTitle("Własna maska");
         save.requestFocus();
         stage.showAndWait();
+    }
+
+    private List<Spinner<Integer>> createSpinners() {
+        List<Spinner<Integer>> spinners = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            SpinnerValueFactory<Integer> values = new SpinnerValueFactory.ListSpinnerValueFactory<>(availableValues);
+            values.setValue(1);
+            Spinner<Integer> spinner = new Spinner<>(values);
+            spinner.valueProperty().addListener((observable, oldValue, newValue) -> {
+                handleValueChange(spinners);
+            });
+            spinners.add(spinner);
+        }
+        return spinners;
+    }
+
+    private void handleValueChange(List<Spinner<Integer>> spinners) {
+        double[] spinnerValues = new double[9];
+        for (int j = 0; j < 9; j++) {
+            spinnerValues[j] = spinners.get(j).getValue();
+        }
+
+        changeCurrentMask(spinnerValues);
     }
 
     private VBox createBorderOptions() {
@@ -148,52 +175,9 @@ public class EdgeDetectionWindow {
         return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder);
     }
 
-    private VBox createScalingOptions() {
-        ToggleGroup scalingTypeGroup = new ToggleGroup();
-        Label borderTypeLabel = new Label("Metoda skalowania:");
-
-        RadioButton method1 = new RadioButton("Równomierna");
-        method1.setUserData(METHOD_1);
-        method1.setToggleGroup(scalingTypeGroup);
-
-        RadioButton method2 = new RadioButton("Trójwartościowa");
-        method2.setUserData(METHOD_2);
-        method2.setToggleGroup(scalingTypeGroup);
-
-        RadioButton method3 = new RadioButton("Odcinająca");
-        method3.setUserData(METHOD_3);
-        method3.setToggleGroup(scalingTypeGroup);
-        method3.setSelected(true);
-
-        scalingTypeGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            currentScalingMethod = (byte) newValue.getUserData();
-            reloadPreview();
-        });
-
-        return new VBox(borderTypeLabel, method3, method1, method2);
-    }
-
-    private void handleOptionChanges(ToggleGroup options) {
-        options.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                changeCurrentMask(newValue);
-            }
-        });
-    }
-
-    private void changeCurrentMask(Toggle newValue) {
-        String maskName = newValue.getUserData().toString();
-
-        masks.stream()
-                .filter(mask -> maskName.equals(mask.getName()))
-                .findFirst()
-                .ifPresent(this::setAsCurrentMask);
-
+    private void changeCurrentMask(double[] values) {
+        currentMask = new Mask3x3("CUSTOM", false, values);
         reloadPreview();
-    }
-
-    private void setAsCurrentMask(Mask3x3 mask3x3) {
-        currentMask = mask3x3;
     }
 
     private void createAfterImageView() {
@@ -202,14 +186,6 @@ public class EdgeDetectionWindow {
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
-    }
-
-    private RadioButton createMaskRadioButton(ToggleGroup options, Mask3x3 mask) {
-        RadioButton maskButton = new RadioButton(mask.toString());
-        maskButton.setUserData(mask.getName());
-        maskButton.setToggleGroup(options);
-        maskButton.setPrefHeight(50);
-        return maskButton;
     }
 
     private void createBeforeImageView() {
@@ -221,11 +197,13 @@ public class EdgeDetectionWindow {
 
     private void reloadPreview() {
         after = applyMask(currentMask);
-        after = ScalingUtils.scale(after, currentScalingMethod);
         afterImageView.setImage(after);
     }
 
     private Image applyMask(Mask3x3 mask) {
+        if (mask == null) {
+            return before;
+        }
         Mat image = ImageUtils.imageToMat(before);
 
         if (mask.getKernelSize() == 1) {

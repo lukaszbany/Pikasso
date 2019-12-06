@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.linear;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;

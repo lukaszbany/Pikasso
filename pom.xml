@@ -6,9 +6,11 @@
 
     <groupId>pl.betweenthelines.pikasso</groupId>
     <artifactId>Pikasso</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.3-SNAPSHOT</version>
 
     <properties>
+        <mainClass>pl.betweenthelines.pikasso.Main</mainClass>
+        <application.title>${project.artifactId}</application.title>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
     </properties>

@@ -22,7 +22,14 @@ import org.apache.commons.io.FilenameUtils;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.*;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.CreateMaskWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.EdgeDetectionWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.SharpenLinearWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.SmoothLinearWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.onearg.NegationWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.onearg.PosterizeWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.onearg.StretchToRangeWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.onearg.ThresholdOneArgWindow;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -39,7 +46,7 @@ import static pl.betweenthelines.pikasso.utils.ImageUtils.getImageSelection;
 public class MainWindow {
 
     private static final double ZOOM_SPEED = 0.05;
-    private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("*.jpg", "*.bmp", "*.png");
+    private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("*.jpg", "*.jpeg", "*.bmp", "*.png");
 
     private Stage mainStage;
     private File lastDirectory;

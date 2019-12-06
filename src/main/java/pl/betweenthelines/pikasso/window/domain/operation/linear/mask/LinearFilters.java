@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation.mask;
+package pl.betweenthelines.pikasso.window.domain.operation.linear.mask;
 
 public class LinearFilters {
 

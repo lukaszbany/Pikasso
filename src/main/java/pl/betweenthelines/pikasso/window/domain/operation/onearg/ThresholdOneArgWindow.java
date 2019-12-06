@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.onearg;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,6 +22,7 @@ public class ThresholdOneArgWindow {
 
     private static final double MIN_LEVEL = 0;
     private static final double MAX_LEVEL = 255;
+    private static final int MINIMAL_WIDTH = 600;
 
     ImageView beforeImageView;
     ImageView afterImageView;
@@ -50,7 +51,12 @@ public class ThresholdOneArgWindow {
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
 
-        hBox = new HBox(beforeImageView, afterImageView);
+        HBox beforeImageViewHbox = new HBox(beforeImageView);
+        beforeImageViewHbox.setAlignment(Pos.CENTER);
+        HBox afterImageViewHbox = new HBox(afterImageView);
+        afterImageViewHbox.setAlignment(Pos.CENTER);
+        hBox = new HBox(beforeImageViewHbox, afterImageViewHbox);
+        hBox.setAlignment(Pos.CENTER);
 
         CheckBox preserveGray = new CheckBox("Zachowaj poziom szarości");
         preserveGray.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -91,9 +97,11 @@ public class ThresholdOneArgWindow {
         buttons.setAlignment(Pos.CENTER_RIGHT);
         vBox = new VBox(hBox, buttons);
 
-        double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
+        double windowWidth = Math.max(MINIMAL_WIDTH, afterImageView.getBoundsInLocal().getWidth() * 2);
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + 55;
         Scene scene = new Scene(vBox, windowWidth, windowHeight);
+        beforeImageViewHbox.setPrefWidth(windowWidth / 2);
+        afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
         stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);

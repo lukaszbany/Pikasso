@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.onearg;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -38,7 +38,14 @@ public class NegationWindow {
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
 
-        hBox = new HBox(beforeImageView, afterImageView);
+
+        HBox beforeImageViewHbox = new HBox(beforeImageView);
+        beforeImageViewHbox.setAlignment(Pos.CENTER);
+        HBox afterImageViewHbox = new HBox(afterImageView);
+        afterImageViewHbox.setAlignment(Pos.CENTER);
+        hBox = new HBox(beforeImageViewHbox, afterImageViewHbox);
+        hBox.setAlignment(Pos.CENTER);
+
         Button cancel = new Button("Odrzuć");
         cancel.setOnAction(event -> {
             negationStage.close();
@@ -58,6 +65,8 @@ public class NegationWindow {
         double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + 55;
         Scene negationScene = new Scene(vBox, windowWidth, windowHeight);
+        beforeImageViewHbox.setPrefWidth(windowWidth / 2);
+        afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
         negationStage = new Stage();
         negationStage.initModality(Modality.APPLICATION_MODAL);

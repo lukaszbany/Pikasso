@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.linear;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,18 +15,19 @@ import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.mask.Mask3x3;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static javafx.geometry.Orientation.VERTICAL;
-import static pl.betweenthelines.pikasso.window.domain.operation.ScalingUtils.*;
-import static pl.betweenthelines.pikasso.window.domain.operation.mask.LinearFilters.*;
+import static pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils.*;
+import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.*;
 
-public class SharpenLinearWindow {
+public class EdgeDetectionWindow {
 
     private static final int OPTIONS_HEIGHT = 160;
+    private static final int MINIMAL_WIDTH = 550;
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -44,19 +45,18 @@ public class SharpenLinearWindow {
     private int currentBorderType;
     private byte currentScalingMethod;
 
-    public SharpenLinearWindow(FileData openedFileData) {
+    public EdgeDetectionWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
-        masks = Arrays.asList(SHARPEN_1, SHARPEN_2, SHARPEN_3, SHARPEN_4);
+        masks = Arrays.asList(EDGE_DETECTION_1, EDGE_DETECTION_2, EDGE_DETECTION_3);
 
         ToggleGroup options = new ToggleGroup();
-        RadioButton mask1 = createMaskRadioButton(options, SHARPEN_1);
-        RadioButton mask2 = createMaskRadioButton(options, SHARPEN_2);
-        RadioButton mask3 = createMaskRadioButton(options, SHARPEN_3);
-        RadioButton mask4 = createMaskRadioButton(options, SHARPEN_4);
+        RadioButton mask1 = createMaskRadioButton(options, EDGE_DETECTION_1);
+        RadioButton mask2 = createMaskRadioButton(options, EDGE_DETECTION_2);
+        RadioButton mask3 = createMaskRadioButton(options, EDGE_DETECTION_3);
         mask1.setSelected(true);
         handleOptionChanges(options);
 
-        currentMask = SHARPEN_1;
+        currentMask = EDGE_DETECTION_1;
         currentBorderType = Core.BORDER_CONSTANT;
         currentScalingMethod = METHOD_3;
         times = 1;
@@ -64,7 +64,12 @@ public class SharpenLinearWindow {
         createBeforeImageView();
         createAfterImageView();
 
-        hBox = new HBox(beforeImageView, afterImageView);
+        HBox beforeImageViewHbox = new HBox(beforeImageView);
+        beforeImageViewHbox.setAlignment(Pos.CENTER);
+        HBox afterImageViewHbox = new HBox(afterImageView);
+        afterImageViewHbox.setAlignment(Pos.CENTER);
+        hBox = new HBox(beforeImageViewHbox, afterImageViewHbox);
+        hBox.setAlignment(Pos.CENTER);
 
         Button cancel = new Button("Odrzuć");
         cancel.setOnAction(event -> {
@@ -97,8 +102,9 @@ public class SharpenLinearWindow {
         VBox borderVBox = createBorderOptions();
         VBox scalingVBox = createScalingOptions();
 
-        HBox masksHBox = new HBox(mask1, mask2, mask3, mask4);
+        HBox masksHBox = new HBox(mask1, mask2, mask3);
         masksHBox.setSpacing(15);
+        masksHBox.setAlignment(Pos.CENTER);
         masksHBox.setPrefHeight(60);
         HBox radioHBox = new HBox(borderVBox, new Separator(VERTICAL), scalingVBox);
         radioHBox.setSpacing(15);
@@ -110,15 +116,17 @@ public class SharpenLinearWindow {
         buttons.setAlignment(Pos.CENTER_RIGHT);
         vBox = new VBox(hBox, buttons);
 
-        double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
+        double windowWidth = Math.max(MINIMAL_WIDTH, afterImageView.getBoundsInLocal().getWidth() * 2);
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + OPTIONS_HEIGHT;
         Scene scene = new Scene(vBox, windowWidth, windowHeight);
+        beforeImageViewHbox.setPrefWidth(windowWidth / 2);
+        afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
         stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
 
         stage.setScene(scene);
-        stage.setTitle("Wyostrzanie");
+        stage.setTitle("Detekcja krawędzi");
         save.requestFocus();
         stage.showAndWait();
     }

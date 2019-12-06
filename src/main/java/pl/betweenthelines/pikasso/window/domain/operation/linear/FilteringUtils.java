@@ -1,10 +1,10 @@
-package pl.betweenthelines.pikasso.window.domain.operation;
+package pl.betweenthelines.pikasso.window.domain.operation.linear;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import pl.betweenthelines.pikasso.window.domain.operation.mask.Mask3x3;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
 
 import static org.opencv.core.Core.BORDER_CONSTANT;
 import static org.opencv.core.CvType.CV_32F;
