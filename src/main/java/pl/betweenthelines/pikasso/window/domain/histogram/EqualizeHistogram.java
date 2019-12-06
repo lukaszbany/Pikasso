@@ -9,7 +9,7 @@ import pl.betweenthelines.pikasso.window.domain.FileData;
 
 public class EqualizeHistogram {
 
-    public static Image equalizeHistogram(FileData openedFileData, Histogram histogram) {
+    public static Image equalizeHistogram(FileData openedFileData) {
         Image before = openedFileData.getImageView().getImage();
 
         Mat inImage = ImageUtils.imageToMat(before);

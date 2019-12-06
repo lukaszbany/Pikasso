@@ -1,7 +1,5 @@
 package pl.betweenthelines.pikasso.window;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
@@ -62,12 +60,12 @@ public class HistogramWindow implements Window {
         histogramStage = new Stage();
         histogramHBox = new HBox();
 
+        reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+
         redCheckbox = createChannelVisibilityCheckbox(RED);
         greenCheckbox = createChannelVisibilityCheckbox(GREEN);
         blueCheckbox = createChannelVisibilityCheckbox(BLUE);
         grayCheckbox = createChannelVisibilityCheckbox(GRAY);
-
-        reloadHistogram(MIN_LEVEL, MAX_LEVEL);
 
         createLeftOptions();
         VBox histogramVBox = createChart();
@@ -219,7 +217,7 @@ public class HistogramWindow implements Window {
         stretchHistogram.setOnAction(event -> {
             try {
                 Image newImage = StretchHistogram.stretchHistogram(openedFileData, histogram);
-                openedFileData.getImageView().setImage(newImage);
+                openedFileData.setImage(newImage);
                 reloadHistogram(MIN_LEVEL, MAX_LEVEL);
             } catch (Exception e) {
                 ErrorHandler.handleError(e);
@@ -237,8 +235,8 @@ public class HistogramWindow implements Window {
                 openedFileData.setImageSelection(null);
                 reloadHistogram(MIN_LEVEL, MAX_LEVEL);
 
-                Image newImage = EqualizeHistogram.equalizeHistogram(openedFileData, histogram);
-                openedFileData.getImageView().setImage(newImage);
+                Image newImage = EqualizeHistogram.equalizeHistogram(openedFileData);
+                openedFileData.setImage(newImage);
                 reloadHistogram(MIN_LEVEL, MAX_LEVEL);
             } catch (Exception e) {
                 ErrorHandler.handleError(e);
@@ -275,7 +273,12 @@ public class HistogramWindow implements Window {
 
     private CheckBox createChannelVisibilityCheckbox(ChannelProperties.Channel channel) {
         CheckBox checkBox = new CheckBox(channel.getName());
-        checkBox.setSelected(true);
+        boolean isVisible = GRAY.equals(channel) == histogram.isGrayscale();
+        checkBox.setSelected(isVisible);
+        if (!isVisible) {
+            chart.getStyleClass().add(channel.getUncheckedClass());
+        }
+
         checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 chart.getStyleClass().remove(channel.getUncheckedClass());

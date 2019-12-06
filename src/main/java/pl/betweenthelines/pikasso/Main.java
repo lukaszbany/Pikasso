@@ -3,7 +3,6 @@ package pl.betweenthelines.pikasso;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import nu.pattern.OpenCV;
-import org.opencv.core.Core;
 import pl.betweenthelines.pikasso.window.MainWindow;
 
 public class Main extends Application {

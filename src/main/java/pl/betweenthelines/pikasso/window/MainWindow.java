@@ -1,17 +1,15 @@
 package pl.betweenthelines.pikasso.window;
 
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.Light.Point;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.ScrollEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -24,10 +22,7 @@ import org.apache.commons.io.FilenameUtils;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.NegationWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.PosterizeWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.StretchToRangeWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.ThresholdOneArgWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -35,13 +30,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static pl.betweenthelines.pikasso.utils.ImageUtils.getImageSelection;
 
 public class MainWindow {
 
     private static final double ZOOM_SPEED = 0.05;
+    private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("*.jpg", "*.bmp", "*.png");
+
     private Stage mainStage;
     private File lastDirectory;
     private FileData openedFileData;
@@ -49,6 +48,7 @@ public class MainWindow {
     private Pane imagePane;
     private ScrollPane scrollPane;
     private ImageView imageView;
+    private MenuItem undoItem;
 
     private List<MenuItem> enabledWhenFileOpended;
 
@@ -163,7 +163,7 @@ public class MainWindow {
     private void createMenu() {
         menuBar = new MenuBar();
         imageView = new ImageView();
-        menuBar.getMenus().addAll(createFileMenu(), createImageMenu(), createOperationsMenu());
+        menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createImageMenu(), createOperationsMenu());
     }
 
     private Menu createOperationsMenu() {
@@ -171,8 +171,17 @@ public class MainWindow {
         MenuItem desaturate = createDesaturationItem();
 
         SeparatorMenuItem separator1 = new SeparatorMenuItem();
+        Menu oneArg = createOneArgMenu();
+        Menu linear = createLinear();
+
+        operationsMenu.getItems().addAll(desaturate, separator1, oneArg, linear);
+        return operationsMenu;
+    }
+
+    private Menu createOneArgMenu() {
         Menu oneArg = new Menu("Jednoargumentowe");
         MenuItem negation = new MenuItem("Negacja");
+        enabledWhenFileOpended.add(negation);
         negation.setOnAction(event -> {
             try {
                 NegationWindow negationWindow = new NegationWindow(openedFileData);
@@ -180,7 +189,9 @@ public class MainWindow {
                 ErrorHandler.handleError(e);
             }
         });
+
         MenuItem thresholdOneArg = new MenuItem("Progowanie");
+        enabledWhenFileOpended.add(thresholdOneArg);
         thresholdOneArg.setOnAction(event -> {
             try {
                 ThresholdOneArgWindow thresholdOneArgWindow = new ThresholdOneArgWindow(openedFileData);
@@ -188,7 +199,9 @@ public class MainWindow {
                 ErrorHandler.handleError(e);
             }
         });
+
         MenuItem posterize = new MenuItem("Posteryzacja");
+        enabledWhenFileOpended.add(posterize);
         posterize.setOnAction(event -> {
             try {
                 PosterizeWindow posterizeWindow = new PosterizeWindow(openedFileData);
@@ -196,7 +209,9 @@ public class MainWindow {
                 ErrorHandler.handleError(e);
             }
         });
+
         MenuItem stretchToRange = new MenuItem("Rozciąganie do poziomów jasności");
+        enabledWhenFileOpended.add(stretchToRange);
         stretchToRange.setOnAction(event -> {
             try {
                 StretchToRangeWindow stretchToRangeWindow = new StretchToRangeWindow(openedFileData);
@@ -204,22 +219,63 @@ public class MainWindow {
                 ErrorHandler.handleError(e);
             }
         });
-
         oneArg.getItems().addAll(negation, thresholdOneArg, posterize, stretchToRange);
-
-        operationsMenu.getItems().addAll(desaturate, separator1, oneArg);
-        return operationsMenu;
+        return oneArg;
     }
+
+    private Menu createLinear() {
+        Menu linear = new Menu("Liniowe");
+        MenuItem smoothing = new MenuItem("Wygładzanie");
+        enabledWhenFileOpended.add(smoothing);
+        smoothing.setOnAction(event -> {
+            try {
+                SmoothLinearWindow smoothLinearWindow = new SmoothLinearWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        MenuItem sharpen = new MenuItem("Wyostrzanie");
+        enabledWhenFileOpended.add(sharpen);
+        sharpen.setOnAction(event -> {
+            try {
+                SharpenLinearWindow sharpenLinearWindow = new SharpenLinearWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        MenuItem edgeDetection = new MenuItem("Detekcja krawędzi");
+        enabledWhenFileOpended.add(edgeDetection);
+        edgeDetection.setOnAction(event -> {
+            try {
+                EdgeDetectionWindow edgeDetectionWindow = new EdgeDetectionWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        MenuItem createMask = new MenuItem("Własna maska");
+        enabledWhenFileOpended.add(createMask);
+        createMask.setOnAction(event -> {
+            try {
+                CreateMaskWindow createMaskWindow = new CreateMaskWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        linear.getItems().addAll(smoothing, sharpen, edgeDetection, new SeparatorMenuItem(), createMask);
+        return linear;
+    }
+
 
     private MenuItem createDesaturationItem() {
         MenuItem desaturate = new MenuItem("Desaturacja");
         enabledWhenFileOpended.add(desaturate);
-        desaturate.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                ColorAdjust colorAdjust = new ColorAdjust(0, -1, 0, 0);
-                imageView.setEffect(colorAdjust);
-            }
+        desaturate.setOnAction(event -> {
+            Image image = ImageUtils.toGrayscale(imageView.getImage());
+            openedFileData.setImage(image);
         });
         return desaturate;
     }
@@ -277,6 +333,64 @@ public class MainWindow {
                 }
             }
         });
+
+        scrollPane.setOnDragOver(event -> {
+            if (event.getGestureSource() != scrollPane &&
+                    event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            }
+
+            event.consume();
+        });
+
+        scrollPane.setOnDragDropped(new EventHandler<DragEvent>() {
+            @Override
+            public void handle(DragEvent event) {
+                Dragboard dragboard = event.getDragboard();
+                boolean success = false;
+                if (dragboard.hasFiles()) {
+                    Optional<File> file = dragboard.getFiles()
+                            .stream()
+                            .filter(MainWindow.this::hasAcceptedExtension)
+                            .findFirst();
+
+                    if (file.isPresent()) {
+                        try {
+                            openImage(file.get());
+                            success = true;
+                            refreshWindow();
+                        } catch (FileNotFoundException e) {
+                            ErrorHandler.handleError(e);
+                        }
+                    }
+                }
+
+                event.setDropCompleted(success);
+                event.consume();
+            }
+        });
+    }
+
+    private boolean hasAcceptedExtension(File file) {
+        String extension = "*." + FilenameUtils.getExtension(file.getName());
+        return ACCEPTED_EXTENSIONS.contains(extension);
+    }
+
+    private Menu createEditMenu() {
+        Menu imageMenu = new Menu("Edycja");
+        imageMenu.getItems().add(createUndoItem());
+        return imageMenu;
+    }
+
+    private MenuItem createUndoItem() {
+        undoItem = new MenuItem("Cofnij");
+        undoItem.setDisable(true);
+        undoItem.setOnAction(event -> openedFileData.undo());
+
+        KeyCombination undoCombination = new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN);
+        undoItem.setAccelerator(undoCombination);
+
+        return undoItem;
     }
 
     private Menu createImageMenu() {
@@ -324,24 +438,24 @@ public class MainWindow {
 
         FileChooser fileChooser = prepareSaveFileChooser();
 
-        saveFileAs.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                if (lastDirectory != null) {
-                    fileChooser.setInitialDirectory(lastDirectory);
+        KeyCombination keyCodeCombination = new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN);
+        saveFileAs.setAccelerator(keyCodeCombination);
+
+        saveFileAs.setOnAction(event -> {
+            if (lastDirectory != null) {
+                fileChooser.setInitialDirectory(lastDirectory);
+            }
+
+            File file = fileChooser.showSaveDialog(mainStage);
+            if (file != null) {
+                //TODO: Check if user haven't write other extension in filename!
+                String extension = FilenameUtils.getExtension(file.getName());
+                BufferedImage bufferedImage = ImageUtils.getBufferedImage(imageView);
+                if (savingAsJpgOrBmp(extension)) {
+                    bufferedImage = convertToRGB(bufferedImage);
                 }
 
-                File file = fileChooser.showSaveDialog(mainStage);
-                if (file != null) {
-                    //TODO: Check if user haven't write other extension in filename!
-                    String extension = FilenameUtils.getExtension(file.getName());
-                    BufferedImage bufferedImage = ImageUtils.getBufferedImage(imageView);
-                    if (savingAsJpgOrBmp(extension)) {
-                        bufferedImage = convertToRGB(bufferedImage);
-                    }
-
-                    saveBufferedImage(file, extension, bufferedImage);
-                }
+                saveBufferedImage(file, extension, bufferedImage);
             }
         });
         return saveFileAs;
@@ -383,9 +497,13 @@ public class MainWindow {
     private MenuItem createOpenFileItem() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Otwórz plik");
-        FileChooser.ExtensionFilter extensionFilter = new FileChooser.ExtensionFilter("Obrazy", "*.jpg", "*.bmp", "*.png");
+        FileChooser.ExtensionFilter extensionFilter = new FileChooser.ExtensionFilter("Obrazy", ACCEPTED_EXTENSIONS);
         fileChooser.getExtensionFilters().add(extensionFilter);
         MenuItem openFile = new MenuItem("Otwórz");
+
+        KeyCombination keyCodeCombination = new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN);
+        openFile.setAccelerator(keyCodeCombination);
+
         openFile.setOnAction(event -> {
             if (lastDirectory != null) {
                 fileChooser.setInitialDirectory(lastDirectory);
@@ -420,7 +538,7 @@ public class MainWindow {
         imageView.fitHeightProperty().bind(zoomSlider.valueProperty().multiply(image.getHeight()));
         imageView.setImage(image);
         zoomSlider.setValue(calculateZoom(image));
-        openedFileData = new FileData(file, imageView, null, null);
+        openedFileData = new FileData(file, imageView, undoItem);
         lastDirectory = file.getParentFile();
     }
 
@@ -443,6 +561,7 @@ public class MainWindow {
         closeFile.setOnAction(event -> {
             openedFileData = null;
             imageView.setImage(null);
+            undoItem.setDisable(true);
             refreshWindow();
         });
         return closeFile;

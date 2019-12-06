@@ -26,7 +26,7 @@ public class ThresholdOneArgWindow {
     ImageView beforeImageView;
     ImageView afterImageView;
 
-    Stage negationStage;
+    Stage stage;
     VBox vBox;
     HBox hBox;
 
@@ -77,12 +77,12 @@ public class ThresholdOneArgWindow {
 
         Button cancel = new Button("Odrzuć");
         cancel.setOnAction(event -> {
-            negationStage.close();
+            stage.close();
         });
         Button save = new Button("Zachowaj");
         save.setOnAction(event -> {
-            openedFileData.getImageView().setImage(after);
-            negationStage.close();
+            openedFileData.setImage(after);
+            stage.close();
         });
         HBox buttons = new HBox(preserveGray, invert, slider, value, cancel, save);
         buttons.setPadding(new Insets(13, 10, 10, 0));
@@ -93,15 +93,15 @@ public class ThresholdOneArgWindow {
 
         double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + 55;
-        Scene negationScene = new Scene(vBox, windowWidth, windowHeight);
+        Scene scene = new Scene(vBox, windowWidth, windowHeight);
 
-        negationStage = new Stage();
-        negationStage.initModality(Modality.APPLICATION_MODAL);
+        stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
 
-        negationStage.setScene(negationScene);
-        negationStage.setTitle("Progowanie");
+        stage.setScene(scene);
+        stage.setTitle("Progowanie");
         save.requestFocus();
-        negationStage.showAndWait();
+        stage.showAndWait();
     }
 
     private void reloadPreview() {

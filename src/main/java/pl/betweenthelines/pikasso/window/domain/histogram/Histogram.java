@@ -1,17 +1,12 @@
 package pl.betweenthelines.pikasso.window.domain.histogram;
 
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
 import lombok.Getter;
-import org.apache.commons.io.FileUtils;
 import pl.betweenthelines.pikasso.exception.ImageIsTooBigException;
 import pl.betweenthelines.pikasso.exception.ImageNotLoadedYetException;
-import pl.betweenthelines.pikasso.utils.ImageUtils;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 
 import static pl.betweenthelines.pikasso.window.domain.histogram.ChannelProperties.Channel.*;
 
@@ -32,7 +27,7 @@ public class Histogram {
     private ChannelProperties blue;
     private ChannelProperties gray;
 
-    private boolean isGrayscale;
+    private boolean isGrayscale = true;
 
     public Histogram(Image image, int minLevel, int maxLevel) throws ImageNotLoadedYetException, IOException, ImageIsTooBigException {
         validateImageSize(image);
@@ -43,7 +38,8 @@ public class Histogram {
         buildHistogramData();
     }
 
-    private void validateImageSize(Image image) throws ImageIsTooBigException { ;
+    private void validateImageSize(Image image) throws ImageIsTooBigException {
+        ;
         if (image.getWidth() > MAX_SIDE_SIZE || image.getHeight() > MAX_SIDE_SIZE) {
             throw new ImageIsTooBigException();
         }
@@ -74,6 +70,7 @@ public class Histogram {
                 if (r == g && r == b) {
                     gg = r;
                 } else {
+                    isGrayscale = false;
                     gg = (int) (0.3 * r + 0.59 * g + 0.11 * b);
                 }
 

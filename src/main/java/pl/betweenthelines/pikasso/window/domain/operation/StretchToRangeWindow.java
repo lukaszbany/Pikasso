@@ -15,6 +15,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.controlsfx.control.RangeSlider;
+import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 
 import java.awt.image.BufferedImage;
@@ -27,7 +28,7 @@ public class StretchToRangeWindow {
     ImageView beforeImageView;
     ImageView afterImageView;
 
-    Stage negationStage;
+    Stage stage;
     VBox vBox;
     HBox hBox;
 
@@ -38,7 +39,7 @@ public class StretchToRangeWindow {
     Slider backgroundSlider;
 
     public StretchToRangeWindow(FileData openedFileData) {
-        before = openedFileData.getImageView().getImage();
+        before = ImageUtils.toGrayscale(openedFileData.getImageView().getImage());
         beforeImageView = new ImageView((before));
         beforeImageView.setPreserveRatio(true);
         beforeImageView.setFitWidth(400);
@@ -93,11 +94,12 @@ public class StretchToRangeWindow {
         Label backgroundLabel = new Label("Poziom tła:");
         backgroundSlider = new Slider(MIN_LEVEL, MAX_LEVEL, MIN_LEVEL);
         Label backgroundValue = new Label("0");
+        backgroundValue.setPrefWidth(20);
         backgroundSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
             backgroundValue.setText(String.valueOf(newValue.intValue()));
             reloadPreview();
         });
-        HBox backgroundHBox = new HBox(backgroundLabel, backgroundSlider);
+        HBox backgroundHBox = new HBox(backgroundLabel, backgroundSlider, backgroundValue);
 
         after = stretch();
         afterImageView = new ImageView(after);
@@ -108,12 +110,12 @@ public class StretchToRangeWindow {
 
         Button cancel = new Button("Odrzuć");
         cancel.setOnAction(event -> {
-            negationStage.close();
+            stage.close();
         });
         Button save = new Button("Zachowaj");
         save.setOnAction(event -> {
-            openedFileData.getImageView().setImage(after);
-            negationStage.close();
+            openedFileData.setImage(after);
+            stage.close();
         });
         HBox buttons = new HBox(cancel, save);
         buttons.setPadding(new Insets(13, 10, 10, 0));
@@ -128,15 +130,15 @@ public class StretchToRangeWindow {
 
         double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + 110;
-        Scene negationScene = new Scene(vBox, windowWidth, windowHeight);
+        Scene scene = new Scene(vBox, windowWidth, windowHeight);
 
-        negationStage = new Stage();
-        negationStage.initModality(Modality.APPLICATION_MODAL);
+        stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
 
-        negationStage.setScene(negationScene);
-        negationStage.setTitle("Posteryzacja");
+        stage.setScene(scene);
+        stage.setTitle("Rozciąganie do zadanych poziomów");
         save.requestFocus();
-        negationStage.showAndWait();
+        stage.showAndWait();
     }
 
     private void reloadPreview() {

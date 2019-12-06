@@ -45,7 +45,7 @@ public class NegationWindow {
         });
         Button save = new Button("Zachowaj");
         save.setOnAction(event -> {
-            openedFileData.getImageView().setImage(after);
+            openedFileData.setImage(after);
             negationStage.close();
         });
         HBox buttons = new HBox(cancel, save);
