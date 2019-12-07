@@ -1,7 +1,11 @@
 package pl.betweenthelines.pikasso.window;
 
+import com.sun.media.jai.codec.FileSeekableStream;
+import com.sun.media.jai.codec.ImageCodec;
+import com.sun.media.jai.codec.ImageDecoder;
+import com.sun.media.jai.codec.SeekableStream;
 import javafx.application.Platform;
-import javafx.event.EventHandler;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -20,6 +24,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
+import pl.betweenthelines.pikasso.exception.FileOpenException;
+import pl.betweenthelines.pikasso.exception.FileTypeNotSupported;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 import pl.betweenthelines.pikasso.window.domain.operation.directional.PrewittFilterWindow;
@@ -36,14 +42,15 @@ import pl.betweenthelines.pikasso.window.domain.operation.onearg.StretchToRangeW
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.ThresholdOneArgWindow;
 
 import javax.imageio.ImageIO;
+import javax.media.jai.PlanarImage;
 import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static pl.betweenthelines.pikasso.utils.ImageUtils.getImageSelection;
 
@@ -408,37 +415,39 @@ public class MainWindow {
             event.consume();
         });
 
-        scrollPane.setOnDragDropped(new EventHandler<DragEvent>() {
-            @Override
-            public void handle(DragEvent event) {
-                Dragboard dragboard = event.getDragboard();
-                boolean success = false;
-                if (dragboard.hasFiles()) {
-                    Optional<File> file = dragboard.getFiles()
-                            .stream()
-                            .filter(MainWindow.this::hasAcceptedExtension)
-                            .findFirst();
-
-                    if (file.isPresent()) {
-                        try {
-                            openImage(file.get());
-                            success = true;
-                            refreshWindow();
-                        } catch (FileNotFoundException e) {
-                            ErrorHandler.handleError(e);
-                        }
-                    }
-                }
-
-                event.setDropCompleted(success);
-                event.consume();
+        scrollPane.setOnDragDropped(event -> {
+            boolean success = false;
+            try {
+                success = tryToOpenFile(event);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
             }
+
+            event.setDropCompleted(success);
+            event.consume();
         });
+    }
+
+    private boolean tryToOpenFile(DragEvent event) throws FileTypeNotSupported, IOException, FileOpenException {
+        Dragboard dragboard = event.getDragboard();
+        boolean success = false;
+        if (dragboard.hasFiles()) {
+            File file = dragboard.getFiles()
+                    .stream()
+                    .filter(MainWindow.this::hasAcceptedExtension)
+                    .findFirst()
+                    .orElseThrow(FileTypeNotSupported::new);
+
+            openImage(file);
+            success = true;
+            refreshWindow();
+        }
+        return success;
     }
 
     private boolean hasAcceptedExtension(File file) {
         String extension = "*." + FilenameUtils.getExtension(file.getName());
-        return ACCEPTED_EXTENSIONS.contains(extension);
+        return ACCEPTED_EXTENSIONS.contains(extension.toLowerCase());
     }
 
     private Menu createEditMenu() {
@@ -585,7 +594,7 @@ public class MainWindow {
             if (file != null) {
                 try {
                     openImage(file);
-                } catch (FileNotFoundException e) {
+                } catch (Exception e) {
                     ErrorHandler.handleError(e);
                 }
             }
@@ -595,9 +604,16 @@ public class MainWindow {
         return openFile;
     }
 
-    private void openImage(File file) throws FileNotFoundException {
-        FileInputStream fileInputStream = new FileInputStream(file);
-        Image image = new Image(fileInputStream);
+    private void openImage(File file) throws IOException, FileOpenException {
+        Image image;
+        String extension = FilenameUtils.getExtension(file.getName());
+        if ("tif".equals(extension.toLowerCase())) {
+            image = openTif(file);
+        } else {
+            FileInputStream fileInputStream = new FileInputStream(file);
+            image = new Image(fileInputStream);
+        }
+
         imageView.setEffect(null);
         imageView.setPreserveRatio(true);
         imageView.fitHeightProperty().bind(zoomSlider.valueProperty().multiply(image.getHeight()));
@@ -605,6 +621,29 @@ public class MainWindow {
         zoomSlider.setValue(calculateZoom(image));
         openedFileData = new FileData(file, imageView, undoItem);
         lastDirectory = file.getParentFile();
+    }
+
+    private Image openTif(File file) throws IOException, FileOpenException {
+        Image image;
+        SeekableStream stream = new FileSeekableStream(file);
+        String[] names = ImageCodec.getDecoderNames(stream);
+        ImageDecoder dec = ImageCodec.createImageDecoder(names[0], stream, null);
+        if (dec == null) {
+            throw new FileOpenException();
+        }
+
+        RenderedImage im = dec.decodeAsRenderedImage();
+        if (im == null) {
+            throw new FileOpenException();
+        }
+
+        BufferedImage bufferedImage = PlanarImage.wrapRenderedImage(im).getAsBufferedImage();
+        if (bufferedImage == null) {
+            throw new FileOpenException();
+        }
+
+        image = SwingFXUtils.toFXImage(bufferedImage, null);
+        return image;
     }
 
     private double calculateZoom(Image image) {
