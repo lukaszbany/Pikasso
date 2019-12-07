@@ -10,6 +10,7 @@ import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -89,6 +90,9 @@ public class PosterizeWindow {
         double windowWidth = Math.max(MINIMAL_WIDTH, afterImageView.getBoundsInLocal().getWidth() * 2);
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + 55;
         Scene scene = new Scene(vBox, windowWidth, windowHeight);
+        scene.setOnKeyPressed(event -> {
+            if (KeyCode.ESCAPE.equals(event.getCode())) stage.close();
+        });
         beforeImageViewHbox.setPrefWidth(windowWidth / 2);
         afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
@@ -96,6 +100,7 @@ public class PosterizeWindow {
         stage.initModality(Modality.APPLICATION_MODAL);
 
         stage.setScene(scene);
+        stage.getIcons().add(new Image("PIKAsso-icon.jpg"));
         stage.setTitle("Posteryzacja");
         save.requestFocus();
         stage.showAndWait();

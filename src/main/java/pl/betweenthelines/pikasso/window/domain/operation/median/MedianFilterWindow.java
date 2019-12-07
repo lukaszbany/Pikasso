@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation.linear;
+package pl.betweenthelines.pikasso.window.domain.operation.median;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,29 +13,23 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static javafx.geometry.Orientation.VERTICAL;
 import static org.opencv.core.Core.BORDER_CONSTANT;
-import static org.opencv.core.Core.BORDER_DEFAULT;
-import static org.opencv.core.CvType.CV_32F;
-import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SMOOTH_1;
-import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SMOOTH_2;
 
-public class SmoothLinearWindow {
+public class MedianFilterWindow {
 
-    private static final double MIN_LEVEL = 1;
-    private static final double DEFAULT = 1;
-    private static final double MAX_LEVEL = 16;
-    private static final int OPTIONS_HEIGHT = 110;
-    private static final int MINIMAL_WIDTH = 700;
+    private static final int OPTIONS_HEIGHT = 80;
+    private static final int MINIMAL_WIDTH = 550;
+
+    private static final int KERNEL_3x3 = 3;
+    private static final int KERNEL_3x5 = 35;
+    private static final int KERNEL_5x3 = 53;
+    private static final int KERNEL_5x5 = 5;
+    private static final int KERNEL_7x7 = 7;
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -47,35 +41,29 @@ public class SmoothLinearWindow {
     private Image before;
     private Image after;
     private Slider slider;
-    private double currentLevel;
     private double times;
-    private Mask3x3 parametrized1 = new Mask3x3("PARAMETRIZED_1", true, 1, 1, 1, 1, 1, 1, 1, 1, 1);
-    private Mask3x3 parametrized2 = new Mask3x3("PARAMETRIZED_2", true, 0, 1, 0, 1, 1, 1, 0, 1, 0);
+    private int currentKernelSize;
 
-    private List<Mask3x3> masks;
-    private Mask3x3 currentMask;
     private int currentBorderType;
 
-    public SmoothLinearWindow(FileData openedFileData) {
+    public MedianFilterWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
-        masks = Arrays.asList(SMOOTH_1, SMOOTH_2, parametrized1, parametrized2);
 
         ToggleGroup options = new ToggleGroup();
-        RadioButton mask1 = createMaskRadioButton(options, SMOOTH_1);
-        RadioButton mask2 = createMaskRadioButton(options, SMOOTH_2);
-        RadioButton maskK1 = createMaskRadioButton(options, parametrized1);
-        RadioButton maskK2 = createMaskRadioButton(options, parametrized2);
+        RadioButton mask1 = createMaskRadioButton(options, "3x3", KERNEL_3x3);
+//        RadioButton mask2 = createMaskRadioButton(options, "3x5", KERNEL_3x5);
+//        RadioButton mask3 = createMaskRadioButton(options, "5x3", KERNEL_5x3);
+        RadioButton mask4 = createMaskRadioButton(options, "5x5", KERNEL_5x5);
+        RadioButton mask5 = createMaskRadioButton(options, "7x7", KERNEL_7x7);
         mask1.setSelected(true);
         handleOptionChanges(options);
-        HBox radioHBox = new HBox(mask1, mask2, maskK1, maskK2);
+        HBox radioHBox = new HBox(mask1, mask4, mask5);
         radioHBox.setSpacing(15);
 
-        currentMask = SMOOTH_1;
-        currentLevel = DEFAULT;
+        currentKernelSize = KERNEL_3x3;
         currentBorderType = Core.BORDER_CONSTANT;
         times = 1;
 
-        HBox kSliderHbox = createSliderHBox();
         createBeforeImageView();
         createAfterImageView();
 
@@ -96,9 +84,6 @@ public class SmoothLinearWindow {
             stage.close();
         });
 
-        VBox parametrizedSlider = new VBox(kSliderHbox);
-        parametrizedSlider.setSpacing(5);
-        parametrizedSlider.setAlignment(Pos.CENTER);
         Slider timesSlider = new Slider(1, 32, 1);
         timesSlider.setPrefWidth(100);
         Label timesValue = new Label("1x");
@@ -109,16 +94,13 @@ public class SmoothLinearWindow {
             reloadPreview();
         });
 
-        VBox radioAndKSliderVBox = new VBox(radioHBox, parametrizedSlider);
-        radioAndKSliderVBox.setSpacing(15);
-        radioAndKSliderVBox.setAlignment(Pos.CENTER);
         HBox buttonsHbox = new HBox(cancel, save);
         HBox timesSliderHBox = new HBox(timesSlider, timesValue);
         VBox buttonsTimesVbox = new VBox(timesSliderHBox, buttonsHbox);
 
         VBox borderVBox = createBorderOptions();
 
-        HBox buttons = new HBox(radioAndKSliderVBox,
+        HBox buttons = new HBox(radioHBox,
                 new Separator(VERTICAL), borderVBox,
                 new Separator(VERTICAL), buttonsTimesVbox);
         buttons.setPadding(new Insets(13, 10, 10, 0));
@@ -141,9 +123,17 @@ public class SmoothLinearWindow {
 
         stage.setScene(scene);
         stage.getIcons().add(new Image("PIKAsso-icon.jpg"));
-        stage.setTitle("Wygładzanie");
+        stage.setTitle("Filtracja medianowa");
         save.requestFocus();
         stage.showAndWait();
+    }
+
+    private RadioButton createMaskRadioButton(ToggleGroup options, String text, int kernelSize) {
+        RadioButton maskButton = new RadioButton(text);
+        maskButton.setUserData(kernelSize);
+        maskButton.setToggleGroup(options);
+        maskButton.setPrefHeight(25);
+        return maskButton;
     }
 
     private void handleOptionChanges(ToggleGroup options) {
@@ -155,46 +145,16 @@ public class SmoothLinearWindow {
     }
 
     private void changeCurrentMask(Toggle newValue) {
-        String maskName = newValue.getUserData().toString();
-        handleSlider(maskName);
-
-        masks.stream()
-                .filter(mask -> maskName.equals(mask.getName()))
-                .findFirst()
-                .ifPresent(this::setAsCurrentMask);
-
+        currentKernelSize = (int) newValue.getUserData();
         reloadPreview();
     }
 
-    private void setAsCurrentMask(Mask3x3 mask3x3) {
-        currentMask = mask3x3;
-    }
-
     private void createAfterImageView() {
-        after = applyMask(SMOOTH_1);
+        after = applyMask();
         afterImageView = new ImageView(after);
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
-    }
-
-    private HBox createSliderHBox() {
-        Label value = new Label("k = 1");
-        value.setPrefWidth(35);
-        createSlider(value);
-
-        HBox sliderHbox = new HBox(slider, value);
-        sliderHbox.setAlignment(Pos.TOP_RIGHT);
-        sliderHbox.setSpacing(5);
-        return sliderHbox;
-    }
-
-    private RadioButton createMaskRadioButton(ToggleGroup options, Mask3x3 mask) {
-        RadioButton maskButton = new RadioButton(mask.toString());
-        maskButton.setUserData(mask.getName());
-        maskButton.setToggleGroup(options);
-        maskButton.setPrefHeight(50);
-        return maskButton;
     }
 
     private void createBeforeImageView() {
@@ -217,73 +177,43 @@ public class SmoothLinearWindow {
         reflectedBorder.setUserData(Core.BORDER_REPLICATE);
         reflectedBorder.setToggleGroup(borderTypeGroup);
 
-        RadioButton existingBorder = new RadioButton("Istniejące sąsiedztwo");
-        existingBorder.setUserData(Core.BORDER_DEFAULT);
-        existingBorder.setToggleGroup(borderTypeGroup);
-
         borderTypeGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             currentBorderType = (int) newValue.getUserData();
             reloadPreview();
         });
 
-        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder);
-    }
-
-    private void createSlider(Label value) {
-        slider = new Slider(MIN_LEVEL, MAX_LEVEL, MIN_LEVEL);
-        slider.setDisable(true);
-        slider.setPrefWidth(100);
-        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            slider.setValue(newValue.intValue());
-            value.setText("k = " + newValue.intValue());
-            parametrized1.updateMiddleElement(newValue.intValue());
-            parametrized2.updateMiddleElement(newValue.intValue());
-            reloadPreview();
-        });
-    }
-
-    private void handleSlider(String maskName) {
-        if (isCurrentMaskParametrized(maskName)) {
-            slider.setDisable(false);
-        } else {
-            slider.setDisable(true);
-        }
-    }
-
-    private boolean isCurrentMaskParametrized(String maskName) {
-        return maskName.equals(parametrized1.getName()) ||
-                maskName.equals(parametrized2.getName());
+        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder);
     }
 
     private void reloadPreview() {
-        after = applyMask(currentMask);
+        after = applyMask();
         afterImageView.setImage(after);
     }
 
-    private Image applyMask(Mask3x3 mask) {
+    private Image applyMask() {
         Mat image = ImageUtils.imageToMat(before);
         Mat destination = new Mat(image.rows(), image.cols(), image.type());
         image.copyTo(destination);
 
         if (currentBorderType == BORDER_CONSTANT) {
-            applyMaskWithConstantBorder(mask, image, destination);
+            applyMaskWithConstantBorder(image, destination);
         } else {
-            applyMask(mask, image, destination);
+            applyMask(image, destination);
         }
 
         return ImageUtils.mat2Image(image);
     }
 
-    private void applyMask(Mask3x3 mask, Mat image, Mat destination) {
+    private void applyMask(Mat image, Mat destination) {
         for (int i = 0; i < times; i++) {
-            Imgproc.filter2D(destination, destination, CV_32F, mask.getMat(), new Point(-1, -1), 0, currentBorderType);
+            Imgproc.medianBlur(destination, destination, currentKernelSize);
         }
         destination.copyTo(image);
     }
 
-    private void applyMaskWithConstantBorder(Mask3x3 mask, Mat image, Mat destination) {
+    private void applyMaskWithConstantBorder(Mat image, Mat destination) {
         for (int i = 0; i < times; i++) {
-            Imgproc.filter2D(destination, destination, CV_32F, mask.getMat(), new Point(-1, -1), 0, BORDER_DEFAULT);
+            Imgproc.medianBlur(destination, destination, currentKernelSize);
         }
 
         restoreBorder(image, destination);

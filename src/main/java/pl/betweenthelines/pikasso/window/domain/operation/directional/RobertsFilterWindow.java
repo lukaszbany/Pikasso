@@ -1,7 +1,6 @@
-package pl.betweenthelines.pikasso.window.domain.operation.linear;
+package pl.betweenthelines.pikasso.window.domain.operation.directional;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,25 +12,26 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.controlsfx.control.RangeSlider;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
-
-import java.util.ArrayList;
-import java.util.List;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils;
 
 import static javafx.geometry.Orientation.VERTICAL;
-import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SHARPEN_1;
+import static org.opencv.core.Core.BORDER_CONSTANT;
+import static pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils.*;
 
-public class CreateMaskWindow {
+public class RobertsFilterWindow {
 
-    private static final int OPTIONS_HEIGHT = 90;
-    private static final int MINIMAL_WIDTH = 600;
-    private static final String X = "X";
-    private static final String DEAFAULT_MASK_LABEL = String.format("%4s%4s%4s\n%4s%4s%4s\n%4s%4s%4s", X, X, X, X, X, X, X, X, X);
+    private static final int OPTIONS_HEIGHT = 160;
+    private static final int MINIMAL_WIDTH = 550;
+
+    private static final int MIN_LEVEL = 0;
+    private static final int MAX_LEVEL = 255;
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -43,28 +43,30 @@ public class CreateMaskWindow {
     private Image before;
     private Image after;
     private double times;
+    RangeSlider rangeSlider;
 
-    private Mask3x3 currentMask;
     private int currentBorderType;
-    private ObservableList<Integer> availableValues;
+    private byte currentScalingMethod;
+    private boolean l2Gradient;
 
-    public CreateMaskWindow(FileData openedFileData) {
+    public RobertsFilterWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
-        availableValues = FXCollections.observableArrayList();
-        for (int j = -20; j <= 20; j++) availableValues.add(j);
 
-        List<Spinner<Integer>> spinners = createSpinners();
-        HBox spinner1Hbox = new HBox(spinners.get(0), spinners.get(1), spinners.get(2));
-        HBox spinner2Hbox = new HBox(spinners.get(3), spinners.get(4), spinners.get(5));
-        HBox spinner3Hbox = new HBox(spinners.get(6), spinners.get(7), spinners.get(8));
-        VBox vBox = new VBox(spinner1Hbox, spinner2Hbox, spinner3Hbox);
-        vBox.setPrefWidth(180);
-        HBox createMaskHBox = new HBox(vBox);
-        createMaskHBox.setAlignment(Pos.CENTER);
-        createMaskHBox.setPrefWidth(200);
+        TextField min = new TextField(String.valueOf(MIN_LEVEL));
+        min.setDisable(true);
+        min.setMaxWidth(40);
+        TextField max = new TextField(String.valueOf(MAX_LEVEL));
+        max.setDisable(true);
+        max.setMaxWidth(40);
+        rangeSlider = createRangeSlider(min, max);
+        CheckBox l2Checkbox = new CheckBox("L2 norm");
+        l2Checkbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            l2Gradient = newValue;
+            reloadPreview();
+        });
 
-        currentMask = new Mask3x3("DEFAULT", false, 1, 1, 1, 1, 1, 1, 1, 1, 1);
         currentBorderType = Core.BORDER_CONSTANT;
+        currentScalingMethod = METHOD_3;
         times = 1;
 
         createBeforeImageView();
@@ -104,9 +106,19 @@ public class CreateMaskWindow {
         VBox buttonsTimesVbox = new VBox(timesSliderHBox, buttonsHbox);
         buttonsTimesVbox.setAlignment(Pos.CENTER_RIGHT);
         buttonsTimesVbox.setSpacing(15);
-        VBox borderVBox = createBorderOptions();
 
-        HBox buttons = new HBox(createMaskHBox, new Separator(VERTICAL), borderVBox, new Separator(VERTICAL), buttonsTimesVbox);
+        VBox borderVBox = createBorderOptions();
+        VBox scalingVBox = createScalingOptions();
+
+        HBox sliderHBox = new HBox(min, rangeSlider, max, l2Checkbox);
+        sliderHBox.setSpacing(15);
+        sliderHBox.setPrefHeight(60);
+        sliderHBox.setAlignment(Pos.CENTER);
+        HBox radioHBox = new HBox(borderVBox, new Separator(VERTICAL), scalingVBox);
+        radioHBox.setSpacing(15);
+        radioHBox.setAlignment(Pos.CENTER);
+
+        HBox buttons = new HBox(new VBox(sliderHBox, new Separator(), radioHBox), new Separator(VERTICAL), buttonsTimesVbox);
         buttons.setPadding(new Insets(13, 10, 10, 0));
         buttons.setSpacing(15);
         buttons.setMaxHeight(OPTIONS_HEIGHT);
@@ -127,32 +139,29 @@ public class CreateMaskWindow {
 
         stage.setScene(scene);
         stage.getIcons().add(new Image("PIKAsso-icon.jpg"));
-        stage.setTitle("Własna maska");
+        stage.setTitle("Filtr Robertsa");
         save.requestFocus();
         stage.showAndWait();
     }
 
-    private List<Spinner<Integer>> createSpinners() {
-        List<Spinner<Integer>> spinners = new ArrayList<>();
-        for (int i = 0; i < 9; i++) {
-            SpinnerValueFactory<Integer> values = new SpinnerValueFactory.ListSpinnerValueFactory<>(availableValues);
-            values.setValue(1);
-            Spinner<Integer> spinner = new Spinner<>(values);
-            spinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-                handleValueChange(spinners);
-            });
-            spinners.add(spinner);
-        }
-        return spinners;
+    private RangeSlider createRangeSlider(TextField min, TextField max) {
+        RangeSlider range = new RangeSlider();
+        range.setShowTickMarks(true);
+        range.setShowTickLabels(true);
+        range.setMin(MIN_LEVEL);
+        range.setMax(MAX_LEVEL);
+        range.setHighValue(MAX_LEVEL);
+        range.setPrefWidth(200);
+        range.highValueProperty().addListener(handleChanges(max));
+        range.lowValueProperty().addListener(handleChanges(min));
+        return range;
     }
 
-    private void handleValueChange(List<Spinner<Integer>> spinners) {
-        double[] spinnerValues = new double[9];
-        for (int j = 0; j < 9; j++) {
-            spinnerValues[j] = spinners.get(j).getValue();
-        }
-
-        changeCurrentMask(spinnerValues);
+    private ChangeListener<Number> handleChanges(TextField max) {
+        return (observable, oldValue, newValue) -> {
+            max.setText(String.valueOf(newValue.intValue()));
+            reloadPreview();
+        };
     }
 
     private VBox createBorderOptions() {
@@ -164,10 +173,6 @@ public class CreateMaskWindow {
         replicatedBorder.setToggleGroup(borderTypeGroup);
         replicatedBorder.setSelected(true);
 
-        RadioButton reflectedBorder = new RadioButton("Powielenie pikseli brzegowych");
-        reflectedBorder.setUserData(Core.BORDER_REPLICATE);
-        reflectedBorder.setToggleGroup(borderTypeGroup);
-
         RadioButton existingBorder = new RadioButton("Istniejące sąsiedztwo");
         existingBorder.setUserData(Core.BORDER_DEFAULT);
         existingBorder.setToggleGroup(borderTypeGroup);
@@ -177,20 +182,48 @@ public class CreateMaskWindow {
             reloadPreview();
         });
 
-        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder);
+        return new VBox(borderTypeLabel, replicatedBorder, existingBorder);
     }
 
-    private void changeCurrentMask(double[] values) {
-        currentMask = new Mask3x3("CUSTOM", false, values);
-        reloadPreview();
+    private VBox createScalingOptions() {
+        ToggleGroup scalingTypeGroup = new ToggleGroup();
+        Label borderTypeLabel = new Label("Metoda skalowania:");
+
+        RadioButton method1 = new RadioButton("Równomierna");
+        method1.setUserData(METHOD_1);
+        method1.setToggleGroup(scalingTypeGroup);
+
+        RadioButton method2 = new RadioButton("Trójwartościowa");
+        method2.setUserData(METHOD_2);
+        method2.setToggleGroup(scalingTypeGroup);
+
+        RadioButton method3 = new RadioButton("Odcinająca");
+        method3.setUserData(METHOD_3);
+        method3.setToggleGroup(scalingTypeGroup);
+        method3.setSelected(true);
+
+        scalingTypeGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            currentScalingMethod = (byte) newValue.getUserData();
+            reloadPreview();
+        });
+
+        return new VBox(borderTypeLabel, method3, method1, method2);
     }
 
     private void createAfterImageView() {
-        after = applyMask(SHARPEN_1);
+        after = applyMask();
         afterImageView = new ImageView(after);
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
+    }
+
+    private RadioButton createMaskRadioButton(ToggleGroup options, String text, byte mask) {
+        RadioButton maskButton = new RadioButton(text);
+        maskButton.setUserData(mask);
+        maskButton.setToggleGroup(options);
+        maskButton.setPrefHeight(20);
+        return maskButton;
     }
 
     private void createBeforeImageView() {
@@ -201,39 +234,46 @@ public class CreateMaskWindow {
     }
 
     private void reloadPreview() {
-        after = applyMask(currentMask);
+        after = applyMask();
+        after = ScalingUtils.scale(after, currentScalingMethod);
         afterImageView.setImage(after);
     }
 
-    private Image applyMask(Mask3x3 mask) {
-        if (mask == null) {
-            return before;
-        }
+    private Image applyMask() {
         Mat image = ImageUtils.imageToMat(before);
-
-        if (mask.getKernelSize() == 1) {
-            applyMask(mask, image);
-        } else {
-            applyMaskWithColorConversion(mask, image);
-        }
+        applyMask(image);
 
         return ImageUtils.mat2Image(image);
     }
 
-    private void applyMask(Mask3x3 mask, Mat image) {
-        for (int i = 0; i < times; i++) {
-            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType);
-        }
-    }
-
-    private void applyMaskWithColorConversion(Mask3x3 mask, Mat image) {
+    private void applyMask(Mat image) {
         Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
 
         for (int i = 0; i < times; i++) {
-            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType);
+            apply(image);
         }
 
         Core.convertScaleAbs(image, image);
+    }
+
+    public void apply(Mat image) {
+        Mat destination = new Mat(image.rows(), image.cols(), image.type());
+        image.copyTo(destination);
+        Imgproc.GaussianBlur(destination, destination, new Size(3, 3), 0);
+
+        int low = (int) rangeSlider.getLowValue();
+        int high = (int) rangeSlider.getHighValue();
+
+        Imgproc.Canny(destination, destination, low, high, 3, l2Gradient);
+
+        if (currentBorderType == BORDER_CONSTANT) {
+            Mat cropped = destination.submat(1, destination.height() - 1, 1, destination.width() - 1);
+            cropped.convertTo(cropped, image.type());
+            cropped.copyTo(image.submat(1, image.height() - 1, 1, image.width() - 1));
+        } else {
+            destination.convertTo(destination, image.type());
+            destination.copyTo(image);
+        }
     }
 
 }

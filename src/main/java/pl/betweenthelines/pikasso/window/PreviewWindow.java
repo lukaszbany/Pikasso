@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -52,12 +53,19 @@ public class PreviewWindow {
         double windowWidth = afterImageView.getBoundsInLocal().getWidth() * 2;
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + 55;
         Scene previewScene = new Scene(vBox, windowWidth, windowHeight);
+        previewScene.setOnKeyPressed(event -> {
+            if (KeyCode.ESCAPE.equals(event.getCode())) {
+                result = before;
+                previewStage.close();
+            }
+        });
 
         previewStage = new Stage();
         previewStage.initModality(Modality.APPLICATION_MODAL);
         previewStage.setOnCloseRequest(event -> result = before);
 
         previewStage.setScene(previewScene);
+        previewStage.getIcons().add(new Image("PIKAsso-icon.jpg"));
         previewStage.setTitle("Podgląd");
         save.requestFocus();
         previewStage.showAndWait();

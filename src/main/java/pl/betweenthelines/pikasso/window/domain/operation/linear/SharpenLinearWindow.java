@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -119,6 +120,9 @@ public class SharpenLinearWindow {
         double windowWidth = Math.max(MINIMAL_WIDTH, afterImageView.getBoundsInLocal().getWidth() * 2);
         double windowHeight = afterImageView.getBoundsInLocal().getHeight() + OPTIONS_HEIGHT;
         Scene scene = new Scene(vBox, windowWidth, windowHeight);
+        scene.setOnKeyPressed(event -> {
+            if (KeyCode.ESCAPE.equals(event.getCode())) stage.close();
+        });
         beforeImageViewHbox.setPrefWidth(windowWidth / 2);
         afterImageViewHbox.setPrefWidth(windowWidth / 2);
 
@@ -126,6 +130,7 @@ public class SharpenLinearWindow {
         stage.initModality(Modality.APPLICATION_MODAL);
 
         stage.setScene(scene);
+        stage.getIcons().add(new Image("PIKAsso-icon.jpg"));
         stage.setTitle("Wyostrzanie");
         save.requestFocus();
         stage.showAndWait();
@@ -141,7 +146,7 @@ public class SharpenLinearWindow {
         replicatedBorder.setSelected(true);
 
         RadioButton reflectedBorder = new RadioButton("Powielenie pikseli brzegowych");
-        reflectedBorder.setUserData(Core.BORDER_REFLECT);
+        reflectedBorder.setUserData(Core.BORDER_REPLICATE);
         reflectedBorder.setToggleGroup(borderTypeGroup);
 
         RadioButton existingBorder = new RadioButton("Istniejące sąsiedztwo");

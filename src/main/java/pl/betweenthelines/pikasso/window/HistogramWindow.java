@@ -8,6 +8,7 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -75,8 +76,12 @@ public class HistogramWindow implements Window {
         histogramHBox.getChildren().addAll(optionsWrapper, histogramVBox);
 
         Scene histogramScene = new Scene(histogramHBox, 800, 600);
+        histogramScene.setOnKeyPressed(event -> {
+            if (KeyCode.ESCAPE.equals(event.getCode())) histogramStage.close();
+        });
         histogramScene.getStylesheets().add("histogram.css");
         histogramStage.setScene(histogramScene);
+        histogramStage.getIcons().add(new Image("PIKAsso-icon.jpg"));
         histogramStage.setTitle("Histogram obrazu");
         histogramStage.show();
     }

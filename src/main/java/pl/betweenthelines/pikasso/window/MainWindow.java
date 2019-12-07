@@ -22,10 +22,14 @@ import org.apache.commons.io.FilenameUtils;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
+import pl.betweenthelines.pikasso.window.domain.operation.directional.PrewittFilterWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.directional.RobertsFilterWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.directional.SobelFilterWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.CreateMaskWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.EdgeDetectionWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.SharpenLinearWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.SmoothLinearWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.median.MedianFilterWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.NegationWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.PosterizeWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.StretchToRangeWindow;
@@ -46,7 +50,7 @@ import static pl.betweenthelines.pikasso.utils.ImageUtils.getImageSelection;
 public class MainWindow {
 
     private static final double ZOOM_SPEED = 0.05;
-    private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("*.jpg", "*.jpeg", "*.bmp", "*.png");
+    private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("*.jpg", "*.jpeg", "*.bmp", "*.png", "*.tif");
 
     private Stage mainStage;
     private File lastDirectory;
@@ -180,8 +184,10 @@ public class MainWindow {
         SeparatorMenuItem separator1 = new SeparatorMenuItem();
         Menu oneArg = createOneArgMenu();
         Menu linear = createLinear();
+        Menu median = createMedian();
+        Menu directional = createDirectional();
 
-        operationsMenu.getItems().addAll(desaturate, separator1, oneArg, linear);
+        operationsMenu.getItems().addAll(desaturate, separator1, oneArg, linear, median, directional);
         return operationsMenu;
     }
 
@@ -276,6 +282,58 @@ public class MainWindow {
         return linear;
     }
 
+    private Menu createMedian() {
+        Menu linear = new Menu("Medianowe");
+        MenuItem medianFiltering = new MenuItem("Filtracja medianowa");
+        enabledWhenFileOpended.add(medianFiltering);
+        medianFiltering.setOnAction(event -> {
+            try {
+                MedianFilterWindow medianFilterWindow = new MedianFilterWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+
+        linear.getItems().addAll(medianFiltering);
+        return linear;
+    }
+
+    private Menu createDirectional() {
+        Menu linear = new Menu("Kierunkowe");
+        MenuItem sobelFilter = new MenuItem("Filtr Sobela");
+        enabledWhenFileOpended.add(sobelFilter);
+        sobelFilter.setOnAction(event -> {
+            try {
+                SobelFilterWindow sobelFilterWindow = new SobelFilterWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        MenuItem robertsFilter = new MenuItem("Filtr Robertsa");
+        enabledWhenFileOpended.add(robertsFilter);
+        robertsFilter.setOnAction(event -> {
+            try {
+                RobertsFilterWindow robertsFilterWindow = new RobertsFilterWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        MenuItem prewittFilter = new MenuItem("Filtr Prewitta");
+        enabledWhenFileOpended.add(prewittFilter);
+        prewittFilter.setOnAction(event -> {
+            try {
+                PrewittFilterWindow prewittFilterWindow = new PrewittFilterWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        linear.getItems().addAll(sobelFilter, robertsFilter, prewittFilter);
+        return linear;
+    }
 
     private MenuItem createDesaturationItem() {
         MenuItem desaturate = new MenuItem("Desaturacja");

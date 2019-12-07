@@ -1,4 +1,4 @@
-package pl.betweenthelines.pikasso.window.domain.operation.linear;
+package pl.betweenthelines.pikasso.window.domain.operation.directional;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,22 +13,25 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
-
-import java.util.Arrays;
-import java.util.List;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils;
 
 import static javafx.geometry.Orientation.VERTICAL;
+import static org.opencv.core.Core.BORDER_CONSTANT;
+import static org.opencv.core.Core.BORDER_REFLECT101;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils.*;
-import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.*;
 
-public class EdgeDetectionWindow {
+public class SobelFilterWindow {
 
     private static final int OPTIONS_HEIGHT = 160;
     private static final int MINIMAL_WIDTH = 550;
+
+    private static final byte SOBEL_X = 1;
+    private static final byte SOBEL_Y = 2;
+    private static final byte SOBEL_XY = 3;
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -41,23 +44,28 @@ public class EdgeDetectionWindow {
     private Image after;
     private double times;
 
-    private List<Mask3x3> masks;
-    private Mask3x3 currentMask;
+    private byte currentMask;
     private int currentBorderType;
     private byte currentScalingMethod;
+    private boolean scharrFilter;
+    CheckBox scharrCheckbox;
 
-    public EdgeDetectionWindow(FileData openedFileData) {
+    public SobelFilterWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
-        masks = Arrays.asList(EDGE_DETECTION_1, EDGE_DETECTION_2, EDGE_DETECTION_3);
 
         ToggleGroup options = new ToggleGroup();
-        RadioButton mask1 = createMaskRadioButton(options, EDGE_DETECTION_1);
-        RadioButton mask2 = createMaskRadioButton(options, EDGE_DETECTION_2);
-        RadioButton mask3 = createMaskRadioButton(options, EDGE_DETECTION_3);
+        RadioButton mask1 = createMaskRadioButton(options, "X", SOBEL_X);
+        RadioButton mask2 = createMaskRadioButton(options, "Y", SOBEL_Y);
+        RadioButton mask3 = createMaskRadioButton(options, "XY", SOBEL_XY);
         mask1.setSelected(true);
         handleOptionChanges(options);
+        scharrCheckbox = new CheckBox("Filtr Scharra");
+        scharrCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            scharrFilter = newValue;
+            reloadPreview();
+        });
 
-        currentMask = EDGE_DETECTION_1;
+        currentMask = SOBEL_X;
         currentBorderType = Core.BORDER_CONSTANT;
         currentScalingMethod = METHOD_3;
         times = 1;
@@ -103,10 +111,10 @@ public class EdgeDetectionWindow {
         VBox borderVBox = createBorderOptions();
         VBox scalingVBox = createScalingOptions();
 
-        HBox masksHBox = new HBox(mask1, mask2, mask3);
+        HBox masksHBox = new HBox(mask1, mask2, mask3, scharrCheckbox);
         masksHBox.setSpacing(15);
-        masksHBox.setAlignment(Pos.CENTER);
         masksHBox.setPrefHeight(60);
+        masksHBox.setAlignment(Pos.CENTER);
         HBox radioHBox = new HBox(borderVBox, new Separator(VERTICAL), scalingVBox);
         radioHBox.setSpacing(15);
 
@@ -131,7 +139,7 @@ public class EdgeDetectionWindow {
 
         stage.setScene(scene);
         stage.getIcons().add(new Image("PIKAsso-icon.jpg"));
-        stage.setTitle("Detekcja krawędzi");
+        stage.setTitle("Filtr Sobela");
         save.requestFocus();
         stage.showAndWait();
     }
@@ -195,33 +203,34 @@ public class EdgeDetectionWindow {
     }
 
     private void changeCurrentMask(Toggle newValue) {
-        String maskName = newValue.getUserData().toString();
-
-        masks.stream()
-                .filter(mask -> maskName.equals(mask.getName()))
-                .findFirst()
-                .ifPresent(this::setAsCurrentMask);
-
+        currentMask = (byte) newValue.getUserData();
+        handleScharrFilter();
         reloadPreview();
     }
 
-    private void setAsCurrentMask(Mask3x3 mask3x3) {
-        currentMask = mask3x3;
+    private void handleScharrFilter() {
+        if (currentMask == SOBEL_XY) {
+            scharrFilter = false;
+            scharrCheckbox.setDisable(true);
+        } else {
+            scharrCheckbox.setDisable(false);
+            scharrFilter = scharrCheckbox.isSelected();
+        }
     }
 
     private void createAfterImageView() {
-        after = applyMask(SHARPEN_1);
+        after = applyMask();
         afterImageView = new ImageView(after);
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
     }
 
-    private RadioButton createMaskRadioButton(ToggleGroup options, Mask3x3 mask) {
-        RadioButton maskButton = new RadioButton(mask.toString());
-        maskButton.setUserData(mask.getName());
+    private RadioButton createMaskRadioButton(ToggleGroup options, String text, byte mask) {
+        RadioButton maskButton = new RadioButton(text);
+        maskButton.setUserData(mask);
         maskButton.setToggleGroup(options);
-        maskButton.setPrefHeight(50);
+        maskButton.setPrefHeight(20);
         return maskButton;
     }
 
@@ -233,37 +242,58 @@ public class EdgeDetectionWindow {
     }
 
     private void reloadPreview() {
-        after = applyMask(currentMask);
+        after = applyMask();
         after = ScalingUtils.scale(after, currentScalingMethod);
         afterImageView.setImage(after);
     }
 
-    private Image applyMask(Mask3x3 mask) {
+    private Image applyMask() {
         Mat image = ImageUtils.imageToMat(before);
-
-        if (mask.getKernelSize() == 1) {
-            applyMask(mask, image);
-        } else {
-            applyMaskWithColorConversion(mask, image);
-        }
+        applyMask(image);
 
         return ImageUtils.mat2Image(image);
     }
 
-    private void applyMask(Mask3x3 mask, Mat image) {
-        for (int i = 0; i < times; i++) {
-            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType);
-        }
-    }
-
-    private void applyMaskWithColorConversion(Mask3x3 mask, Mat image) {
+    private void applyMask(Mat image) {
         Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
 
         for (int i = 0; i < times; i++) {
-            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType);
+            apply(image);
         }
 
         Core.convertScaleAbs(image, image);
+    }
+
+    public void apply(Mat image) {
+        Mat destination = new Mat(image.rows(), image.cols(), image.type());
+        image.copyTo(destination);
+        Imgproc.GaussianBlur(destination, destination, new Size(3, 3), 0);
+
+        int kernelSize = scharrFilter && currentMask != SOBEL_XY ? -1 : 3;
+        int dx = 0;
+        int dy = 0;
+        switch (currentMask) {
+            case SOBEL_X:
+                dx = 1;
+                break;
+            case SOBEL_Y:
+                dy = 1;
+                break;
+            case SOBEL_XY:
+                dx = 1;
+                dy = 1;
+        }
+
+        if (currentBorderType == BORDER_CONSTANT) {
+            Imgproc.Sobel(destination, destination, -1, dx, dy, kernelSize, 1, 0, BORDER_REFLECT101);
+            Mat cropped = destination.submat(1, destination.height() - 1, 1, destination.width() - 1);
+            cropped.convertTo(cropped, image.type());
+            cropped.copyTo(image.submat(1, image.height() - 1, 1, image.width() - 1));
+        } else {
+            Imgproc.Sobel(destination, destination, -1, dx, dy, kernelSize, 1, 0, currentBorderType);
+            destination.convertTo(destination, image.type());
+            destination.copyTo(image);
+        }
     }
 
 }
