@@ -13,8 +13,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Scalar;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
@@ -23,18 +22,17 @@ import java.util.Arrays;
 import java.util.List;
 
 import static javafx.geometry.Orientation.VERTICAL;
-import static org.opencv.core.Core.BORDER_CONSTANT;
-import static org.opencv.core.Core.BORDER_DEFAULT;
-import static org.opencv.core.CvType.CV_32F;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SMOOTH_1;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.SMOOTH_2;
 
 public class SmoothLinearWindow {
 
+    private static final int BORDER_MINIMUM = 254;
+    private static final int BORDER_MAXIMUM = 255;
     private static final double MIN_LEVEL = 1;
     private static final double DEFAULT = 1;
     private static final double MAX_LEVEL = 16;
-    private static final int OPTIONS_HEIGHT = 110;
+    private static final int OPTIONS_HEIGHT = 130;
     private static final int MINIMAL_WIDTH = 700;
 
     private ImageView beforeImageView;
@@ -55,6 +53,7 @@ public class SmoothLinearWindow {
     private List<Mask3x3> masks;
     private Mask3x3 currentMask;
     private int currentBorderType;
+    private Scalar border;
 
     public SmoothLinearWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
@@ -221,12 +220,31 @@ public class SmoothLinearWindow {
         existingBorder.setUserData(Core.BORDER_DEFAULT);
         existingBorder.setToggleGroup(borderTypeGroup);
 
+        RadioButton minimum = new RadioButton("Wartość minimalna");
+        minimum.setUserData(BORDER_MINIMUM);
+        minimum.setToggleGroup(borderTypeGroup);
+
+        RadioButton maximum = new RadioButton("Wartość maksymalna");
+        maximum.setUserData(BORDER_MAXIMUM);
+        maximum.setToggleGroup(borderTypeGroup);
+
         borderTypeGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            currentBorderType = (int) newValue.getUserData();
+            int selected = (int) newValue.getUserData();
+            if (selected == BORDER_MINIMUM) {
+                currentBorderType = Core.BORDER_CONSTANT;
+                border = new Scalar(0, 0, 0, 255);
+            } else if (selected == BORDER_MAXIMUM) {
+                currentBorderType = Core.BORDER_CONSTANT;
+                border = new Scalar(255, 255, 255, 255);
+            } else {
+                currentBorderType = selected;
+                border = null;
+            }
+
             reloadPreview();
         });
 
-        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder);
+        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder, minimum, maximum);
     }
 
     private void createSlider(Label value) {
@@ -262,37 +280,15 @@ public class SmoothLinearWindow {
 
     private Image applyMask(Mask3x3 mask) {
         Mat image = ImageUtils.imageToMat(before);
-        Mat destination = new Mat(image.rows(), image.cols(), image.type());
-        image.copyTo(destination);
-
-        if (currentBorderType == BORDER_CONSTANT) {
-            applyMaskWithConstantBorder(mask, image, destination);
-        } else {
-            applyMask(mask, image, destination);
-        }
+        applyMask(mask, image);
 
         return ImageUtils.mat2Image(image);
     }
 
-    private void applyMask(Mask3x3 mask, Mat image, Mat destination) {
+    private void applyMask(Mask3x3 mask, Mat image) {
         for (int i = 0; i < times; i++) {
-            Imgproc.filter2D(destination, destination, CV_32F, mask.getMat(), new Point(-1, -1), 0, currentBorderType);
+            FilteringUtils.applyMask(image, mask, currentBorderType, border);
         }
-        destination.copyTo(image);
-    }
-
-    private void applyMaskWithConstantBorder(Mask3x3 mask, Mat image, Mat destination) {
-        for (int i = 0; i < times; i++) {
-            Imgproc.filter2D(destination, destination, CV_32F, mask.getMat(), new Point(-1, -1), 0, BORDER_DEFAULT);
-        }
-
-        restoreBorder(image, destination);
-    }
-
-    private void restoreBorder(Mat image, Mat destination) {
-        Mat cropped = destination.submat(1, destination.height() - 1, 1, destination.width() - 1);
-        cropped.convertTo(cropped, image.type());
-        cropped.copyTo(image.submat(1, image.height() - 1, 1, image.width() - 1));
     }
 
 }

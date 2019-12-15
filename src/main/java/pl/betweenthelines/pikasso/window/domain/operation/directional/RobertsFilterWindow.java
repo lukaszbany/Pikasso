@@ -19,6 +19,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.MatScalingUtils;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils;
 
 import static javafx.geometry.Orientation.VERTICAL;
@@ -235,7 +236,6 @@ public class RobertsFilterWindow {
 
     private void reloadPreview() {
         after = applyMask();
-        after = ScalingUtils.scale(after, currentScalingMethod);
         afterImageView.setImage(after);
     }
 
@@ -253,27 +253,16 @@ public class RobertsFilterWindow {
             apply(image);
         }
 
-        Core.convertScaleAbs(image, image);
+        MatScalingUtils.scale(image, currentScalingMethod);
     }
 
     public void apply(Mat image) {
-        Mat destination = new Mat(image.rows(), image.cols(), image.type());
-        image.copyTo(destination);
-        Imgproc.GaussianBlur(destination, destination, new Size(3, 3), 0);
+        Imgproc.GaussianBlur(image, image, new Size(3, 3), 0);
 
         int low = (int) rangeSlider.getLowValue();
         int high = (int) rangeSlider.getHighValue();
 
-        Imgproc.Canny(destination, destination, low, high, 3, l2Gradient);
-
-        if (currentBorderType == BORDER_CONSTANT) {
-            Mat cropped = destination.submat(1, destination.height() - 1, 1, destination.width() - 1);
-            cropped.convertTo(cropped, image.type());
-            cropped.copyTo(image.submat(1, image.height() - 1, 1, image.width() - 1));
-        } else {
-            destination.convertTo(destination, image.type());
-            destination.copyTo(image);
-        }
+        Imgproc.Canny(image, image, low, high, 3, l2Gradient);
     }
 
 }

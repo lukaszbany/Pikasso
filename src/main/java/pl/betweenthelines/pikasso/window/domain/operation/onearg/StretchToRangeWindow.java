@@ -61,11 +61,11 @@ public class StretchToRangeWindow {
         rangeP.setPrefHeight(200);
         rangeP.setPrefWidth(400);
         rangeP.highValueProperty().addListener((observable, oldValue, newValue) -> {
-            p1.setText(String.valueOf(newValue.intValue()));
+            p2.setText(String.valueOf(newValue.intValue()));
             reloadPreview();
         });
         rangeP.lowValueProperty().addListener((observable, oldValue, newValue) -> {
-            p2.setText(String.valueOf(newValue.intValue()));
+            p1.setText(String.valueOf(newValue.intValue()));
             reloadPreview();
         });
 
@@ -83,11 +83,11 @@ public class StretchToRangeWindow {
         rangeQ.setPrefHeight(200);
         rangeQ.setPrefWidth(400);
         rangeQ.highValueProperty().addListener((observable, oldValue, newValue) -> {
-            q3.setText(String.valueOf(newValue.intValue()));
+            q4.setText(String.valueOf(newValue.intValue()));
             reloadPreview();
         });
         rangeQ.lowValueProperty().addListener((observable, oldValue, newValue) -> {
-            q4.setText(String.valueOf(newValue.intValue()));
+            q3.setText(String.valueOf(newValue.intValue()));
             reloadPreview();
         });
 

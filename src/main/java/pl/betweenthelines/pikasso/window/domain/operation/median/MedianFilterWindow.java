@@ -25,11 +25,11 @@ public class MedianFilterWindow {
     private static final int OPTIONS_HEIGHT = 80;
     private static final int MINIMAL_WIDTH = 550;
 
-    private static final int KERNEL_3x3 = 3;
-    private static final int KERNEL_3x5 = 35;
-    private static final int KERNEL_5x3 = 53;
-    private static final int KERNEL_5x5 = 5;
-    private static final int KERNEL_7x7 = 7;
+    private static final int KERNEL_3X3 = 3;
+    private static final int KERNEL_5X5 = 5;
+    private static final int KERNEL_7X7 = 7;
+    private static final int KERNEL_9X9 = 9;
+    private static final int KERNEL_11X11 = 11;
 
     private ImageView beforeImageView;
     private ImageView afterImageView;
@@ -50,17 +50,17 @@ public class MedianFilterWindow {
         before = openedFileData.getImageView().getImage();
 
         ToggleGroup options = new ToggleGroup();
-        RadioButton mask1 = createMaskRadioButton(options, "3x3", KERNEL_3x3);
-//        RadioButton mask2 = createMaskRadioButton(options, "3x5", KERNEL_3x5);
-//        RadioButton mask3 = createMaskRadioButton(options, "5x3", KERNEL_5x3);
-        RadioButton mask4 = createMaskRadioButton(options, "5x5", KERNEL_5x5);
-        RadioButton mask5 = createMaskRadioButton(options, "7x7", KERNEL_7x7);
+        RadioButton mask1 = createMaskRadioButton(options, "3x3", KERNEL_3X3);
+        RadioButton mask2 = createMaskRadioButton(options, "5x5", KERNEL_5X5);
+        RadioButton mask3 = createMaskRadioButton(options, "7x7", KERNEL_7X7);
+        RadioButton mask4 = createMaskRadioButton(options, "9x9", KERNEL_9X9);
+        RadioButton mask5 = createMaskRadioButton(options, "11x11", KERNEL_11X11);
         mask1.setSelected(true);
         handleOptionChanges(options);
-        HBox radioHBox = new HBox(mask1, mask4, mask5);
+        HBox radioHBox = new HBox(mask1, mask2, mask3, mask4, mask5);
         radioHBox.setSpacing(15);
 
-        currentKernelSize = KERNEL_3x3;
+        currentKernelSize = KERNEL_3X3;
         currentBorderType = Core.BORDER_CONSTANT;
         times = 1;
 

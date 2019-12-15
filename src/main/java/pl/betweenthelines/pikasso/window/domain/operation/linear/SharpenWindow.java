@@ -13,6 +13,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
@@ -25,9 +26,11 @@ import static javafx.geometry.Orientation.VERTICAL;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils.*;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.*;
 
-public class SharpenLinearWindow {
+public class SharpenWindow {
 
-    private static final int OPTIONS_HEIGHT = 160;
+    private static final int BORDER_MINIMUM = 254;
+    private static final int BORDER_MAXIMUM = 255;
+    private static final int OPTIONS_HEIGHT = 190;
     private static final int MINIMAL_WIDTH = 550;
 
     private ImageView beforeImageView;
@@ -44,17 +47,17 @@ public class SharpenLinearWindow {
     private List<Mask3x3> masks;
     private Mask3x3 currentMask;
     private int currentBorderType;
+    private Scalar border;
     private byte currentScalingMethod;
 
-    public SharpenLinearWindow(FileData openedFileData) {
+    public SharpenWindow(FileData openedFileData) {
         before = openedFileData.getImageView().getImage();
-        masks = Arrays.asList(SHARPEN_1, SHARPEN_2, SHARPEN_3, SHARPEN_4);
+        masks = Arrays.asList(SHARPEN_1, SHARPEN_2, SHARPEN_3);
 
         ToggleGroup options = new ToggleGroup();
         RadioButton mask1 = createMaskRadioButton(options, SHARPEN_1);
         RadioButton mask2 = createMaskRadioButton(options, SHARPEN_2);
         RadioButton mask3 = createMaskRadioButton(options, SHARPEN_3);
-        RadioButton mask4 = createMaskRadioButton(options, SHARPEN_4);
         mask1.setSelected(true);
         handleOptionChanges(options);
 
@@ -104,8 +107,9 @@ public class SharpenLinearWindow {
         VBox borderVBox = createBorderOptions();
         VBox scalingVBox = createScalingOptions();
 
-        HBox masksHBox = new HBox(mask1, mask2, mask3, mask4);
+        HBox masksHBox = new HBox(mask1, mask2, mask3);
         masksHBox.setSpacing(15);
+        masksHBox.setAlignment(Pos.CENTER);
         masksHBox.setPrefHeight(60);
         HBox radioHBox = new HBox(borderVBox, new Separator(VERTICAL), scalingVBox);
         radioHBox.setSpacing(15);
@@ -153,12 +157,31 @@ public class SharpenLinearWindow {
         existingBorder.setUserData(Core.BORDER_DEFAULT);
         existingBorder.setToggleGroup(borderTypeGroup);
 
+        RadioButton minimum = new RadioButton("Wartość minimalna");
+        minimum.setUserData(BORDER_MINIMUM);
+        minimum.setToggleGroup(borderTypeGroup);
+
+        RadioButton maximum = new RadioButton("Wartość maksymalna");
+        maximum.setUserData(BORDER_MAXIMUM);
+        maximum.setToggleGroup(borderTypeGroup);
+
         borderTypeGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            currentBorderType = (int) newValue.getUserData();
+            int selected = (int) newValue.getUserData();
+            if (selected == BORDER_MINIMUM) {
+                currentBorderType = Core.BORDER_CONSTANT;
+                border = new Scalar(0, 0, 0, 255);
+            } else if (selected == BORDER_MAXIMUM) {
+                currentBorderType = Core.BORDER_CONSTANT;
+                border = new Scalar(255, 255, 255, 255);
+            } else {
+                currentBorderType = selected;
+                border = null;
+            }
+
             reloadPreview();
         });
 
-        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder);
+        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder, minimum, maximum);
     }
 
     private VBox createScalingOptions() {
@@ -210,7 +233,7 @@ public class SharpenLinearWindow {
     }
 
     private void createAfterImageView() {
-        after = applyMask(SHARPEN_1);
+        after = applyMask(EDGE_DETECTION_1);
         afterImageView = new ImageView(after);
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
@@ -234,7 +257,6 @@ public class SharpenLinearWindow {
 
     private void reloadPreview() {
         after = applyMask(currentMask);
-        after = ScalingUtils.scale(after, currentScalingMethod);
         afterImageView.setImage(after);
     }
 
@@ -247,12 +269,13 @@ public class SharpenLinearWindow {
             applyMaskWithColorConversion(mask, image);
         }
 
+        MatScalingUtils.scale(image, currentScalingMethod);
         return ImageUtils.mat2Image(image);
     }
 
     private void applyMask(Mask3x3 mask, Mat image) {
         for (int i = 0; i < times; i++) {
-            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType);
+            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType, border);
         }
     }
 
@@ -260,10 +283,8 @@ public class SharpenLinearWindow {
         Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
 
         for (int i = 0; i < times; i++) {
-            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType);
+            FilteringUtils.applyMaskWithBlur(image, mask, currentBorderType, border);
         }
-
-        Core.convertScaleAbs(image, image);
     }
 
 }

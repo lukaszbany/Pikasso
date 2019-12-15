@@ -12,6 +12,7 @@ public class ChannelProperties {
     private Channel channel;
     private long[] pixels;
     private int pixelsTotal;
+    private int pixelCount;
     private int minLevel;
     private int maxLevel;
 
@@ -49,12 +50,12 @@ public class ChannelProperties {
     }
 
     public void calculateParameters() {
-        int pixelsInRange = 0;
+        pixelCount = 0;
         for (int i = minLevel; i <= maxLevel; i++) {
-            pixelsInRange += pixels[i];
+            pixelCount += pixels[i];
         }
 
-        double[] dpixels = new double[pixelsInRange];
+        double[] dpixels = new double[pixelCount];
         int count = 0;
         for (int i = minLevel; i <= maxLevel; i++) {
             for (int j = 0; j < pixels[i]; j++) {
@@ -63,13 +64,13 @@ public class ChannelProperties {
             }
         }
 
-        int middle = pixelsInRange / 2;
-        if (pixelsInRange < 2) {
+        int middle = pixelCount / 2;
+        if (pixelCount < 2) {
             this.median = 0;
             this.mean = 0;
             this.standardDeviation = 0;
             return;
-        } else if (pixelsInRange % 2 == 0) {
+        } else if (pixelCount % 2 == 0) {
             this.median = (dpixels[middle] + dpixels[middle + 1]) / 2;
         } else {
             this.median = dpixels[middle];

@@ -33,7 +33,7 @@ import pl.betweenthelines.pikasso.window.domain.operation.directional.RobertsFil
 import pl.betweenthelines.pikasso.window.domain.operation.directional.SobelFilterWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.CreateMaskWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.EdgeDetectionWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.SharpenLinearWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.SharpenWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.SmoothLinearWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.median.MedianFilterWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.NegationWindow;
@@ -259,7 +259,7 @@ public class MainWindow {
         enabledWhenFileOpended.add(sharpen);
         sharpen.setOnAction(event -> {
             try {
-                SharpenLinearWindow sharpenLinearWindow = new SharpenLinearWindow(openedFileData);
+                SharpenWindow sharpenWindow = new SharpenWindow(openedFileData);
             } catch (Exception e) {
                 ErrorHandler.handleError(e);
             }

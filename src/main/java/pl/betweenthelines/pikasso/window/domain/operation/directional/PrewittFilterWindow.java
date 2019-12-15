@@ -11,19 +11,16 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.FilteringUtils;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.MatScalingUtils;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
 
 import static javafx.geometry.Orientation.VERTICAL;
-import static org.opencv.core.Core.BORDER_CONSTANT;
-import static org.opencv.core.Core.BORDER_REFLECT101;
+import static org.opencv.core.Core.*;
 import static org.opencv.core.CvType.CV_32F;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.ScalingUtils.*;
 import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.LinearFilters.PREWITT_X;
@@ -31,7 +28,9 @@ import static pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Lin
 
 public class PrewittFilterWindow {
 
-    private static final int OPTIONS_HEIGHT = 120;
+    private static final int BORDER_MINIMUM = 254;
+    private static final int BORDER_MAXIMUM = 255;
+    private static final int OPTIONS_HEIGHT = 150;
     private static final int MINIMAL_WIDTH = 550;
 
     private ImageView beforeImageView;
@@ -47,6 +46,7 @@ public class PrewittFilterWindow {
 
     private Mask3x3 currentMask;
     private int currentBorderType;
+    private Scalar border;
     private byte currentScalingMethod;
 
 
@@ -155,12 +155,31 @@ public class PrewittFilterWindow {
         existingBorder.setUserData(Core.BORDER_DEFAULT);
         existingBorder.setToggleGroup(borderTypeGroup);
 
+        RadioButton minimum = new RadioButton("Wartość minimalna");
+        minimum.setUserData(BORDER_MINIMUM);
+        minimum.setToggleGroup(borderTypeGroup);
+
+        RadioButton maximum = new RadioButton("Wartość maksymalna");
+        maximum.setUserData(BORDER_MAXIMUM);
+        maximum.setToggleGroup(borderTypeGroup);
+
         borderTypeGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            currentBorderType = (int) newValue.getUserData();
+            int selected = (int) newValue.getUserData();
+            if (selected == BORDER_MINIMUM) {
+                currentBorderType = Core.BORDER_CONSTANT;
+                border = new Scalar(0, 0, 0, 255);
+            } else if (selected == BORDER_MAXIMUM) {
+                currentBorderType = Core.BORDER_CONSTANT;
+                border = new Scalar(255, 255, 255, 255);
+            } else {
+                currentBorderType = selected;
+                border = null;
+            }
+
             reloadPreview();
         });
 
-        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder);
+        return new VBox(borderTypeLabel, replicatedBorder, reflectedBorder, existingBorder, minimum, maximum);
     }
 
     private VBox createScalingOptions() {
@@ -236,7 +255,6 @@ public class PrewittFilterWindow {
 
     private void reloadPreview() {
         after = applyMask();
-        after = ScalingUtils.scale(after, currentScalingMethod);
         afterImageView.setImage(after);
     }
 
@@ -251,27 +269,19 @@ public class PrewittFilterWindow {
         Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
 
         for (int i = 0; i < times; i++) {
-            apply(image, currentMask);
+            FilteringUtils.applyMaskWithBlur(image, currentMask, currentBorderType, border);
         }
 
-        Core.convertScaleAbs(image, image);
+        MatScalingUtils.scale(image, currentScalingMethod);
     }
 
-    public void apply(Mat image, Mask3x3 mask) {
-        Mat destination = new Mat(image.rows(), image.cols(), image.type());
-        image.copyTo(destination);
-        Imgproc.GaussianBlur(destination, destination, new Size(3, 3), 0);
-
-        if (currentBorderType == BORDER_CONSTANT) {
-            Imgproc.filter2D(destination, destination, CV_32F, mask.getMat(), new Point(-1, -1), 0, BORDER_REFLECT101);
-            Mat cropped = destination.submat(1, destination.height() - 1, 1, destination.width() - 1);
-            cropped.convertTo(cropped, image.type());
-            cropped.copyTo(image.submat(1, image.height() - 1, 1, image.width() - 1));
-        } else {
-            Imgproc.filter2D(destination, destination, CV_32F, mask.getMat(), new Point(-1, -1), 0, BORDER_REFLECT101);
-            destination.convertTo(destination, image.type());
-            destination.copyTo(image);
-        }
-    }
+//    public void apply(Mat image, Mask3x3 mask) {
+//        Imgproc.GaussianBlur(image, image, new Size(3, 3), 0);
+//        Imgproc.filter2D(image, image, CV_32F, mask.getMat(), new Point(-1, -1), 0, currentBorderType);
+//        if (border != null) {
+//            Mat submat = image.submat(1, image.height() - 1, 1, image.width() - 1);
+//            copyMakeBorder(submat, image, 1, 1, 1, 1, BORDER_ISOLATED, border);
+//        }
+//    }
 
 }

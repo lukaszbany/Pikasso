@@ -75,7 +75,7 @@ public class HistogramWindow implements Window {
         histogramVBox.getChildren().addAll(chart, bottomOptionsHBox);
         histogramHBox.getChildren().addAll(optionsWrapper, histogramVBox);
 
-        Scene histogramScene = new Scene(histogramHBox, 800, 600);
+        Scene histogramScene = new Scene(histogramHBox, 800, 640);
         histogramScene.setOnKeyPressed(event -> {
             if (KeyCode.ESCAPE.equals(event.getCode())) histogramStage.close();
         });
@@ -163,21 +163,25 @@ public class HistogramWindow implements Window {
         Label pixelSum = new Label("Razem pikseli:\n" + histogram.getPixelsTotal());
         Separator separator1 = new Separator();
 
+        Label redCount = new Label("Pikseli: " + histogram.getRed().getPixelCount());
         Label redMedian = new Label("Mediana: " + histogram.getRed().getMedian());
         Label redMean = new Label("Średnia: " + FORMATTER.format(histogram.getRed().getMean()));
         Label redSD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getRed().getStandardDeviation()));
         Separator separator2 = new Separator();
 
+        Label greenCount = new Label("Pikseli: " + histogram.getGreen().getPixelCount());
         Label greenMedian = new Label("Mediana: " + histogram.getGreen().getMedian());
         Label greenMean = new Label("Średnia: " + FORMATTER.format(histogram.getGreen().getMean()));
         Label greenSD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getGreen().getStandardDeviation()));
         Separator separator3 = new Separator();
 
+        Label blueCount = new Label("Pikseli: " + histogram.getBlue().getPixelCount());
         Label blueMedian = new Label("Mediana: " + histogram.getBlue().getMedian());
         Label blueMean = new Label("Średnia: " + FORMATTER.format(histogram.getBlue().getMean()));
         Label blueSD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getBlue().getStandardDeviation()));
         Separator separator4 = new Separator();
 
+        Label grayCount = new Label("Pikseli: " + histogram.getGray().getPixelCount());
         Label grayMedian = new Label("Mediana: " + histogram.getGray().getMedian());
         Label grayMean = new Label("Średnia: " + FORMATTER.format(histogram.getGray().getMean()));
         Label graySD = new Label("Odch. stand.: " + FORMATTER.format(histogram.getGray().getStandardDeviation()));
@@ -207,10 +211,10 @@ public class HistogramWindow implements Window {
 
         optionsVBox.getChildren().addAll(imagePreview, separator0,
                 pixelSum, separator1,
-                redCheckbox, redMedian, redMean, redSD, separator2,
-                greenCheckbox, greenMedian, greenMean, greenSD, separator3,
-                blueCheckbox, blueMedian, blueMean, blueSD, separator4,
-                grayCheckbox, grayMedian, grayMean, graySD, separator5,
+                redCheckbox, redCount, redMedian, redMean, redSD, separator2,
+                greenCheckbox, greenCount, greenMedian, greenMean, greenSD, separator3,
+                blueCheckbox, blueCount, blueMedian, blueMean, blueSD, separator4,
+                grayCheckbox, grayCount, grayMedian, grayMean, graySD, separator5,
                 meanColorLabel, meanColorVBox, separator6,
                 stretchHistogram, equalizeHistogram);
 

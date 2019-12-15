@@ -18,6 +18,7 @@ public class Histogram {
 
     private Image image;
     private int pixelsTotal;
+    private int pixelsInRange;
 
     private int minLevel;
     private int maxLevel;
@@ -33,6 +34,7 @@ public class Histogram {
         validateImageSize(image);
         this.image = image;
         this.pixelsTotal = (int) (image.getHeight() * image.getWidth());
+        this.pixelsInRange = pixelsTotal;
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
         buildHistogramData();

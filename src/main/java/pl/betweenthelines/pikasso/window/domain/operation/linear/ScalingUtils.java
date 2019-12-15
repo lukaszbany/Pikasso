@@ -76,7 +76,7 @@ public class ScalingUtils {
     private static int calculateLevel(int oldLevel, int min, int max, byte method) {
         switch (method) {
             case METHOD_1:
-                return (oldLevel - min) / (max - min) * (MAX_LEVEL - 1);
+                return (oldLevel - min) / (max - min) * MAX_LEVEL;
             case METHOD_2:
                 if (oldLevel < 0) return 0;
                 if (oldLevel == 0) return MAX_LEVEL / 2;
