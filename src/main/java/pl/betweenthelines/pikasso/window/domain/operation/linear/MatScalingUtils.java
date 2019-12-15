@@ -24,7 +24,6 @@ public class MatScalingUtils {
         if (!availableMethods.contains(method)) {
             throw new IllegalArgumentException();
         }
-//        printMat(mat);
 
         int channels = mat.channels();
         double[] max = new double[channels];
@@ -78,25 +77,5 @@ public class MatScalingUtils {
         }
 
         throw new IllegalArgumentException();
-    }
-
-    public static void printMat(Mat destination) {
-        int negativeValues = 0;
-        int channels = destination.channels();
-        for (int y = 0; y < destination.height(); y++) {
-            for (int x = 0; x < destination.width(); x++) {
-                double[] levels = destination.get(y, x);
-                System.out.print("[");
-                for (int ch = 0; ch < channels; ch++) {
-                    System.out.print(levels[ch]);
-                    if (ch != channels - 1) System.out.print(", ");
-//                    if (levels[ch] < 0) negativeValues++;
-                }
-                System.out.print("], ");
-            }
-            System.out.println(negativeValues);
-        }
-
-//        System.out.println(negativeValues);
     }
 }

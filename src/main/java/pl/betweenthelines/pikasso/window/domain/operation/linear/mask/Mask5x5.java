@@ -6,10 +6,9 @@ import org.opencv.core.Mat;
 import static org.opencv.core.CvType.CV_32F;
 
 @Getter
-public class Mask5x5 {
+public class Mask5x5 implements Mask {
 
     private String name;
-    private boolean isParametrized;
     private double[] values;
     private int size;
     private int kernelSize;

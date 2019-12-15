@@ -13,7 +13,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
+import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
+import pl.betweenthelines.pikasso.window.HistogramWindow;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.FilteringUtils;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.MatScalingUtils;
@@ -236,6 +238,13 @@ public class PrewittFilterWindow {
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
+        afterImageView.setOnMousePressed(event -> {
+            try {
+                new HistogramWindow(afterImageView);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
     }
 
     private RadioButton createMaskRadioButton(ToggleGroup options, String text, Mask3x3 mask) {
@@ -251,6 +260,13 @@ public class PrewittFilterWindow {
         beforeImageView.setPreserveRatio(true);
         beforeImageView.setFitWidth(400);
         beforeImageView.setFitHeight(400);
+        beforeImageView.setOnMousePressed(event -> {
+            try {
+                new HistogramWindow(beforeImageView);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
     }
 
     private void reloadPreview() {

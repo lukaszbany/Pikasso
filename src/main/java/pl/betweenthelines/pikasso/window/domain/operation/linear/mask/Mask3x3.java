@@ -6,7 +6,7 @@ import org.opencv.core.Mat;
 import static org.opencv.core.CvType.CV_32F;
 
 @Getter
-public class Mask3x3 {
+public class Mask3x3 implements Mask {
 
     private String name;
     private boolean isParametrized;

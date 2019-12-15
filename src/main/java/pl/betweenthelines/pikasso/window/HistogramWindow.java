@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.controlsfx.control.RangeSlider;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
@@ -96,7 +97,7 @@ public class HistogramWindow implements Window {
         VBox histogramVBox = new VBox();
         histogramVBox.getStyleClass().add("frame");
 
-//        chart.setCreateSymbols(false);
+        chart.setCategoryGap(0);
         chart.setLegendVisible(false);
         chart.setHorizontalGridLinesVisible(false);
         chart.setVerticalGridLinesVisible(false);
@@ -298,8 +299,50 @@ public class HistogramWindow implements Window {
         return checkBox;
     }
 
-
     public void close() {
         histogramStage.close();
+    }
+
+    public HistogramWindow(ImageView imageView) throws ImageNotLoadedYetException, IOException, ImageIsTooBigException {
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setAnimated(false);
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setAnimated(false);
+
+        histogramStage = new Stage();
+        histogramHBox = new HBox();
+
+        chart = new BarChart<>(xAxis, yAxis);
+        chart.setBarGap(0);
+        chart.setCategoryGap(0);
+        chart.setLegendVisible(false);
+        chart.setHorizontalGridLinesVisible(false);
+        chart.setVerticalGridLinesVisible(false);
+        chart.prefWidthProperty().bind(histogramHBox.widthProperty());
+        chart.prefHeightProperty().bind(histogramHBox.heightProperty());
+        chart.setAnimated(false);
+
+        this.openedFileData = new FileData(imageView);
+
+        reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+
+        redCheckbox = createChannelVisibilityCheckbox(RED);
+        greenCheckbox = createChannelVisibilityCheckbox(GREEN);
+        blueCheckbox = createChannelVisibilityCheckbox(BLUE);
+        grayCheckbox = createChannelVisibilityCheckbox(GRAY);
+
+        histogramHBox.getChildren().addAll(chart);
+        histogramHBox.setAlignment(Pos.CENTER);
+
+        Scene histogramScene = new Scene(histogramHBox, 560, 480);
+        histogramScene.setOnKeyPressed(event -> {
+            if (KeyCode.ESCAPE.equals(event.getCode())) histogramStage.close();
+        });
+        histogramScene.getStylesheets().add("histogram.css");
+        histogramStage.setScene(histogramScene);
+        histogramStage.getIcons().add(new Image("PIKAsso-icon.jpg"));
+        histogramStage.setTitle("Histogram obrazu");
+        histogramStage.initModality(Modality.WINDOW_MODAL);
+        histogramStage.show();
     }
 }

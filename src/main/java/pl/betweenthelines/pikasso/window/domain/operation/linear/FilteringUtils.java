@@ -5,9 +5,11 @@ import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask;
 import pl.betweenthelines.pikasso.window.domain.operation.linear.mask.Mask3x3;
 
-import static org.opencv.core.Core.*;
+import static org.opencv.core.Core.BORDER_ISOLATED;
+import static org.opencv.core.Core.copyMakeBorder;
 import static org.opencv.core.CvType.CV_32F;
 
 public class FilteringUtils {
@@ -18,8 +20,18 @@ public class FilteringUtils {
         applyMask(image, mask, borderType, border);
     }
 
-    public static void applyMask(Mat image, Mask3x3 mask, int borderType, Scalar border) {
+    public static void applyMask(Mat image, Mask mask, int borderType, Scalar border) {
         Imgproc.filter2D(image, image, CV_32F, mask.getMat(), new Point(-1, -1), 0, borderType);
+        handleBorder(image, border);
+    }
+
+    public static void applyMasks(Mat image, Mask3x3 mask1, Mask3x3 mask2, int borderType, Scalar border) {
+        Imgproc.filter2D(image, image, CV_32F, mask1.getMat(), new Point(-1, -1), 0, borderType);
+        Imgproc.filter2D(image, image, CV_32F, mask2.getMat(), new Point(-1, -1), 0, borderType);
+        handleBorder(image, border);
+    }
+
+    public static void handleBorder(Mat image, Scalar border) {
         if (border != null) {
             Mat submat = image.submat(1, image.height() - 1, 1, image.width() - 1);
             copyMakeBorder(submat, image, 1, 1, 1, 1, BORDER_ISOLATED, border);

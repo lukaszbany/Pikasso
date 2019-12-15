@@ -31,11 +31,9 @@ import pl.betweenthelines.pikasso.window.domain.FileData;
 import pl.betweenthelines.pikasso.window.domain.operation.directional.PrewittFilterWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.directional.RobertsFilterWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.directional.SobelFilterWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.CreateMaskWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.EdgeDetectionWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.SharpenWindow;
-import pl.betweenthelines.pikasso.window.domain.operation.linear.SmoothLinearWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.linear.*;
 import pl.betweenthelines.pikasso.window.domain.operation.median.MedianFilterWindow;
+import pl.betweenthelines.pikasso.window.domain.operation.morphology.MorphologyWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.NegationWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.PosterizeWindow;
 import pl.betweenthelines.pikasso.window.domain.operation.onearg.StretchToRangeWindow;
@@ -194,7 +192,17 @@ public class MainWindow {
         Menu median = createMedian();
         Menu directional = createDirectional();
 
-        operationsMenu.getItems().addAll(desaturate, separator1, oneArg, linear, median, directional);
+        MenuItem morphologicOperations = new MenuItem("Operacje morfologiczne");
+        enabledWhenFileOpended.add(morphologicOperations);
+        morphologicOperations.setOnAction(event -> {
+            try {
+                MorphologyWindow morphologyWindow = new MorphologyWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        operationsMenu.getItems().addAll(desaturate, separator1, oneArg, linear, median, directional, morphologicOperations);
         return operationsMenu;
     }
 
@@ -285,7 +293,17 @@ public class MainWindow {
             }
         });
 
-        linear.getItems().addAll(smoothing, sharpen, edgeDetection, new SeparatorMenuItem(), createMask);
+        MenuItem combineMasks = new MenuItem("Łączenie masek");
+        enabledWhenFileOpended.add(combineMasks);
+        combineMasks.setOnAction(event -> {
+            try {
+                CombineMasksWindow createMaskWindow = new CombineMasksWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+
+        linear.getItems().addAll(smoothing, sharpen, edgeDetection, new SeparatorMenuItem(), createMask, combineMasks);
         return linear;
     }
 

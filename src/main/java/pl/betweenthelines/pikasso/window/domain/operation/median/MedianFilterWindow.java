@@ -14,7 +14,9 @@ import javafx.stage.Stage;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
+import pl.betweenthelines.pikasso.window.HistogramWindow;
 import pl.betweenthelines.pikasso.window.domain.FileData;
 
 import static javafx.geometry.Orientation.VERTICAL;
@@ -155,6 +157,13 @@ public class MedianFilterWindow {
         afterImageView.setPreserveRatio(true);
         afterImageView.setFitWidth(400);
         afterImageView.setFitHeight(400);
+        afterImageView.setOnMousePressed(event -> {
+            try {
+                new HistogramWindow(afterImageView);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
     }
 
     private void createBeforeImageView() {
@@ -162,6 +171,13 @@ public class MedianFilterWindow {
         beforeImageView.setPreserveRatio(true);
         beforeImageView.setFitWidth(400);
         beforeImageView.setFitHeight(400);
+        beforeImageView.setOnMousePressed(event -> {
+            try {
+                new HistogramWindow(beforeImageView);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
     }
 
     private VBox createBorderOptions() {

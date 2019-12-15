@@ -25,6 +25,10 @@ public class FileData {
         undoItem.setDisable(true);
     }
 
+    public FileData(ImageView imageView) {
+        this.imageView = imageView;
+    }
+
     public void setImage(Image image) {
         previousImage = imageView.getImage();
         imageView.setImage(image);
