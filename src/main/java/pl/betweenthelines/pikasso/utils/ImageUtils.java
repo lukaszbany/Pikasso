@@ -15,16 +15,47 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * Klasa pomocnicza do wykonywania operacji na obrazie, takich jak
+ * konwersja pomiędzy obiektami obsługiwanymi przez JavaFX lub obiektami
+ * biblioteki OpenCV.
+ */
 public class ImageUtils {
+
+    /**
+     * Pobiera aktualny obraz z ImageView (np. poddany modyfikacjom)
+     * i konwertuje do obiektu <tt>BufferedImage</tt>.
+     *
+     * @param imageView zawierające Image.
+     * @return wynikowy <tt>BufferedImage</tt>
+     */
     public static BufferedImage getBufferedImage(ImageView imageView) {
         return SwingFXUtils.fromFXImage(imageView.snapshot(null, null), null);
     }
 
+    /**
+     * Pobiera aktualny obraz z ImageView (np. poddany modyfikacjom)
+     * i konwertuje do obiektu <tt>Image</tt>.
+     *
+     * @param imageView zawierające Image.
+     * @return wynikowy <tt>Image</tt>
+     */
     public static Image getFxImage(ImageView imageView) {
         BufferedImage bufferedImage = getBufferedImage(imageView);
         return SwingFXUtils.toFXImage(bufferedImage, null);
     }
 
+    /**
+     * Pobiera fragment obrazu na podstawie podanych parametrów
+     * i zwraca jako obiekt <tt>WritableImage</tt>.
+     *
+     * @param imageView z obrazem
+     * @param x         współrzędna x
+     * @param y         współrzędna y
+     * @param width     szerokość
+     * @param height    wysokość
+     * @return obiekt <tt>WritableImage</tt> z fragmentem obrazu.
+     */
     public static WritableImage getImageSelection(ImageView imageView, double x, double y, double width, double height) {
         SnapshotParameters snapshotParameters = new SnapshotParameters();
         Rectangle2D rectangle2D = new Rectangle2D(x, y, width, height);
@@ -36,6 +67,13 @@ public class ImageUtils {
         return imageSelection;
     }
 
+    /**
+     * Konwertuje obiekt Image do obiektu Mat obsługiwanego przez
+     * bibliotekę OpenCV.
+     *
+     * @param image obraz do konwersji
+     * @return obiekt <tt>Mat</tt> z obrazem
+     */
     public static Mat imageToMat(Image image) {
         int width = (int) image.getWidth();
         int height = (int) image.getHeight();
@@ -51,13 +89,25 @@ public class ImageUtils {
         return mat;
     }
 
-    public static Image mat2Image(Mat frame) {
+    /**
+     * Konwertuje obiekt Mat do obietku Image obsługiwanego przez Javę.
+     *
+     * @param mat obraz do konwersji
+     * @return obiekt <tt>Image</tt> z obrazem.
+     */
+    public static Image mat2Image(Mat mat) {
         MatOfByte buffer = new MatOfByte();
-        Imgcodecs.imencode(".png", frame, buffer);
+        Imgcodecs.imencode(".png", mat, buffer);
 
         return new Image(new ByteArrayInputStream(buffer.toArray()));
     }
 
+    /**
+     * Sprowadza podany obraz do skali szarości.
+     *
+     * @param image wejściowy obraz
+     * @return obiekt <tt>Image</tt> w skali szarości
+     */
     public static Image toGrayscale(Image image) {
         Mat inImage = ImageUtils.imageToMat(image);
         Mat outImage = new Mat();

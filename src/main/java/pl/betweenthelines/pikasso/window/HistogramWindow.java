@@ -1,5 +1,6 @@
 package pl.betweenthelines.pikasso.window;
 
+import javafx.event.Event;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
@@ -20,36 +21,81 @@ import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.exception.ImageIsTooBigException;
 import pl.betweenthelines.pikasso.exception.ImageNotLoadedYetException;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
-import pl.betweenthelines.pikasso.window.domain.FileData;
-import pl.betweenthelines.pikasso.window.domain.histogram.ChannelProperties;
-import pl.betweenthelines.pikasso.window.domain.histogram.EqualizeHistogram;
-import pl.betweenthelines.pikasso.window.domain.histogram.Histogram;
-import pl.betweenthelines.pikasso.window.domain.histogram.StretchHistogram;
+import pl.betweenthelines.pikasso.window.image.FileData;
+import pl.betweenthelines.pikasso.window.image.histogram.ChannelProperties;
+import pl.betweenthelines.pikasso.window.image.histogram.EqualizeHistogram;
+import pl.betweenthelines.pikasso.window.image.histogram.Histogram;
+import pl.betweenthelines.pikasso.window.image.histogram.StretchHistogram;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
 
-import static pl.betweenthelines.pikasso.window.domain.histogram.ChannelProperties.Channel.*;
+import static pl.betweenthelines.pikasso.window.image.histogram.ChannelProperties.Channel.*;
 
+/**
+ * Klasa reprezentująca okno z histogramem.
+ */
 public class HistogramWindow implements Window {
 
+    /**
+     * Maksymalny poziom jasności.
+     */
     public static final int MAX_LEVEL = 255;
+
+    /**
+     * Minimalny poziom jasności.
+     */
     public static final int MIN_LEVEL = 0;
+
+    /**
+     * Format wyświetlanych liczb.
+     */
     private static DecimalFormat FORMATTER = new DecimalFormat("0.00");
 
+    /**
+     * Okno histogramu i jego elementy.
+     */
     private Stage histogramStage;
     private HBox histogramHBox;
     private VBox optionsWrapper;
+
+    /**
+     * Wykres histogramu.
+     */
     private BarChart<String, Number> chart;
+
+    /**
+     * Dane histogramu.
+     */
     private Histogram histogram;
+
+    /**
+     * Podgląd obrazu, którego dotyczy histogram.
+     */
     private ImageView imagePreview;
+
+    /**
+     * Dane o otwartym pliku.
+     */
     private FileData openedFileData;
 
-    CheckBox redCheckbox;
-    CheckBox greenCheckbox;
-    CheckBox blueCheckbox;
-    CheckBox grayCheckbox;
+    /**
+     * CheckBoxy odpowiadające za wyświetlanie na wykresie poszczególnych kanałów.
+     */
+    private CheckBox redCheckbox;
+    private CheckBox greenCheckbox;
+    private CheckBox blueCheckbox;
+    private CheckBox grayCheckbox;
 
+    /**
+     * Konstruktor budujący okno z histogramem i tworzący histogram.
+     *
+     * @param openedFileData dane o otwartym pliku (i zaznaczonym fragmencie)
+     * @throws ImageNotLoadedYetException jeśli na obrazie zostanie wykonana operacji,
+     *                                    zanim zostanie załadowany w całości.
+     * @throws IOException                w razie błędu odczytu pliku
+     * @throws ImageIsTooBigException     jeśli otwarty obraz ma zbyt duży rozmiar
+     */
     public HistogramWindow(FileData openedFileData) throws ImageNotLoadedYetException, IOException, ImageIsTooBigException {
         CategoryAxis xAxis = new CategoryAxis();
         xAxis.setAnimated(false);
@@ -87,12 +133,21 @@ public class HistogramWindow implements Window {
         histogramStage.show();
     }
 
+    /**
+     * Tworzy menu z opcjami dotyczącymi poszczególnych kanałów (statytyki,
+     * sterowanie widocznością) po lewej stronie okna.
+     */
     private void createLeftOptions() {
         optionsWrapper = new VBox(createOptions());
         optionsWrapper.setMinWidth(175);
         optionsWrapper.getStyleClass().add("frame");
     }
 
+    /**
+     * Ustawia opcje wykresu histogramu.
+     *
+     * @return <tt>VBox</tt> z wykresem.
+     */
     private VBox createChart() {
         VBox histogramVBox = new VBox();
         histogramVBox.getStyleClass().add("frame");
@@ -107,15 +162,17 @@ public class HistogramWindow implements Window {
         return histogramVBox;
     }
 
+    /**
+     * Tworzy opcje na dole okna dotyczące (zawężanie zakresu histogramu, odświeżenie)
+     *
+     * @return <tt>HBox</tt> zawierający opcje.
+     */
     private HBox createBottomOptions() {
-        TextField min = new TextField(String.valueOf(MIN_LEVEL));
-        min.setMaxWidth(40);
-        min.setDisable(true);
-        TextField max = new TextField(String.valueOf(MAX_LEVEL));
-        max.setDisable(true);
-        max.setMaxWidth(40);
+        TextField min = createTextField(String.valueOf(MIN_LEVEL));
+        TextField max = createTextField(String.valueOf(MAX_LEVEL));
         RangeSlider range = createRangeSlider(min, max);
         Button refresh = createRefreshButton(range);
+
         HBox bottomOptionsHBox = new HBox(min, range, max, refresh);
         bottomOptionsHBox.setMaxHeight(100);
         bottomOptionsHBox.setSpacing(5);
@@ -123,20 +180,53 @@ public class HistogramWindow implements Window {
         return bottomOptionsHBox;
     }
 
+    /**
+     * Tworzy <tt>TextField</tt> z wartością slidera.
+     *
+     * @param text treść
+     * @return <tt>TextField</tt> z wartością slidera.
+     */
+    private TextField createTextField(String text) {
+        TextField textField = new TextField(text);
+        textField.setMaxWidth(40);
+        textField.setDisable(true);
+        return textField;
+    }
+
+    /**
+     * Tworzy przycisk do odświeżania histogramu.
+     *
+     * @param range slider z wartościami zakresu
+     * @return <tt>Button</tt> do odświeżania histogramu.
+     */
     private Button createRefreshButton(RangeSlider range) {
         Button refresh = new Button("Odśwież");
-        refresh.setOnAction(event -> {
-            try {
-                reloadHistogram((int) range.getLowValue(), (int) range.getHighValue());
-                optionsWrapper.getChildren().clear();
-                optionsWrapper.getChildren().add(createOptions());
-            } catch (Exception e) {
-                ErrorHandler.handleError(e);
-            }
-        });
+        refresh.setOnAction(event -> handleRefreshAction(range));
         return refresh;
     }
 
+    /**
+     * Obsługuje akcję odświeżenia histogramu.
+     *
+     * @param range slider z wartościami zakresu
+     */
+    private void handleRefreshAction(RangeSlider range) {
+        try {
+            reloadHistogram((int) range.getLowValue(), (int) range.getHighValue());
+            optionsWrapper.getChildren().clear();
+            optionsWrapper.getChildren().add(createOptions());
+        } catch (Exception e) {
+            ErrorHandler.handleError(e);
+        }
+    }
+
+    /**
+     * Tworzy <tt>RangeSlider</tt> sterujący zakresem poziomów jasności na histogramie.
+     *
+     * @param min pole tekstowe z wartością dolną zakresu
+     * @param max pole tekstowe z wartością górną zakresu
+     * @return <tt>RangeSlider</tt> z zakresem histogramu
+     */
     private RangeSlider createRangeSlider(TextField min, TextField max) {
         RangeSlider range = new RangeSlider();
         range.setShowTickMarks(true);
@@ -151,6 +241,13 @@ public class HistogramWindow implements Window {
         return range;
     }
 
+    /**
+     * Tworzy <tt>VBox</tt> z opcjami sterującymi widocznością kanałów
+     * i statystykami ich dotyczącymi znajdujący się po lewej stronie
+     * okna.
+     *
+     * @return <tt>VBox</tt> z opcjami
+     */
     private VBox createOptions() {
         VBox optionsVBox = new VBox();
         optionsVBox.setMinWidth(140);
@@ -191,18 +288,7 @@ public class HistogramWindow implements Window {
 
         Label meanColorLabel = new Label("Średni kolor: ");
 
-        Color color = Color.rgb(
-                (int) histogram.getRed().getMean(),
-                (int) histogram.getGreen().getMean(),
-                (int) histogram.getBlue().getMean()
-        );
-        Rectangle meanColor = new Rectangle(35, 35, color);
-        Label hexColorLabel = new Label(getHexColor(
-                histogram.getRed().getMean(),
-                histogram.getGreen().getMean(),
-                histogram.getBlue().getMean()));
-
-        VBox meanColorVBox = new VBox(meanColor, hexColorLabel);
+        VBox meanColorVBox = createMediumColorVBox();
         meanColorVBox.setAlignment(Pos.CENTER);
 
         Separator separator6 = new Separator();
@@ -222,40 +308,103 @@ public class HistogramWindow implements Window {
         return optionsVBox;
     }
 
+    /**
+     * Tworzy podgląd średniego koloru w obrazie (lub średniego poziomu jasności)
+     * wraz z jego wartością w formacie heksadecymalnym (#RRGGBB).
+     *
+     * @return <tt>VBox</tt> ze średnim kolorem.
+     */
+    private VBox createMediumColorVBox() {
+        Color color = Color.rgb(
+                (int) histogram.getRed().getMean(),
+                (int) histogram.getGreen().getMean(),
+                (int) histogram.getBlue().getMean()
+        );
+        Rectangle meanColor = new Rectangle(35, 35, color);
+        Label hexColorLabel = new Label(getHexColor(
+                histogram.getRed().getMean(),
+                histogram.getGreen().getMean(),
+                histogram.getBlue().getMean()));
+
+        return new VBox(meanColor, hexColorLabel);
+    }
+
+    /**
+     * Tworzy przycisk do rozciągnięcie histogramu.
+     *
+     * @return <tt>Button</tt> do rozciągnięcia histogramu.
+     */
     private Button createStretchHistogramButton() {
         Button stretchHistogram = new Button("Rozciągnij histogram");
-        stretchHistogram.setOnAction(event -> {
-            try {
-                Image newImage = StretchHistogram.stretchHistogram(openedFileData, histogram);
-                openedFileData.setImage(newImage);
-                reloadHistogram(MIN_LEVEL, MAX_LEVEL);
-            } catch (Exception e) {
-                ErrorHandler.handleError(e);
-            }
-        });
+        stretchHistogram.setOnAction(this::handleStretchHistogramAction);
 
         return stretchHistogram;
     }
 
+    /**
+     * Obsługuje kliknięcie przycisku "Rozciągnij histogram" za pomocą klasy
+     * <tt>StretchHistogram</tt>, po czym ustawia nowy obraz w oknie głównym
+     * i odświeża histogram.
+     *
+     * @param event zdarzenie kliknięcia przycisku
+     */
+    private void handleStretchHistogramAction(Event event) {
+        try {
+            Image newImage = StretchHistogram.stretchHistogram(openedFileData, histogram);
+            openedFileData.setImage(newImage);
+            reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+        } catch (Exception e) {
+            ErrorHandler.handleError(e);
+        }
+    }
+
+    /**
+     * Tworzy przycisk do wyrównania histogramu.
+     *
+     * @return <tt>Button</tt> do /**
+     * * Tworzy przycisk do wyrównania histogramu.
+     */
     private Button createEqualizeHistogramButton() {
         Button equalizeHistogram = new Button("Wyrównaj histogram");
-        equalizeHistogram.setOnAction(event -> {
-            try {
-                openedFileData.setSelection(null);
-                openedFileData.setImageSelection(null);
-                reloadHistogram(MIN_LEVEL, MAX_LEVEL);
-
-                Image newImage = EqualizeHistogram.equalizeHistogram(openedFileData);
-                openedFileData.setImage(newImage);
-                reloadHistogram(MIN_LEVEL, MAX_LEVEL);
-            } catch (Exception e) {
-                ErrorHandler.handleError(e);
-            }
-        });
+        equalizeHistogram.setOnAction(this::handleEqualizeHistogramAction);
 
         return equalizeHistogram;
     }
 
+    /**
+     * Obsługuje kliknięcie przycisku "Wyrównaj histogram" za pomocą klasy
+     * <tt>EqualizeHistogram</tt>, po czym ustawia nowy obraz w oknie głównym
+     * i odświeża histogram.
+     * <p>
+     * Informacja o zaznaczeniu jest ignorowana - operacja jest przeprowadzana
+     * na całym obrazie.
+     *
+     * @param event
+     */
+    private void handleEqualizeHistogramAction(Event event) {
+        try {
+            openedFileData.setSelection(null);
+            openedFileData.setImageSelection(null);
+            reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+
+            Image newImage = EqualizeHistogram.equalizeHistogram(openedFileData);
+            openedFileData.setImage(newImage);
+            reloadHistogram(MIN_LEVEL, MAX_LEVEL);
+        } catch (Exception e) {
+            ErrorHandler.handleError(e);
+        }
+    }
+
+    /**
+     * Odświeża histogram dla podanego zakresu poziomów jasności.
+     *
+     * @param minLevel dolny poziom jasności
+     * @param maxLevel górny poziom jasności
+     * @throws ImageIsTooBigException     błąd związany ze zbyt dużym obrazem.
+     * @throws IOException                błąd wczytywania obrazu
+     * @throws ImageNotLoadedYetException błąd związany wykonaniem operacji na obrazie,
+     *                                    który nie zdążył się załadować.
+     */
     private void reloadHistogram(int minLevel, int maxLevel) throws ImageIsTooBigException, IOException, ImageNotLoadedYetException {
         histogram = new Histogram(getImage(), minLevel, maxLevel);
         chart.getData().clear();
@@ -267,6 +416,11 @@ public class HistogramWindow implements Window {
         );
     }
 
+    /**
+     * Pobiera obraz lub jego zaznaczony fragment.
+     *
+     * @return obraz lub jego zaznaczony fragment
+     */
     private Image getImage() {
         if (openedFileData.getImageSelection() != null) {
             return openedFileData.getImageSelection();
@@ -275,34 +429,79 @@ public class HistogramWindow implements Window {
         return ImageUtils.getFxImage(openedFileData.getImageView());
     }
 
+    /**
+     * Z podanych poziomów jasności generuje wartość heksadecymalną
+     * odpowiadającą temu kolorowi.
+     *
+     * @param red   poziom kanału czerwonego
+     * @param green poziom kanału zielonego
+     * @param blue  poziom kanału niebieskiego
+     * @return <tt>String</tt> z wartością heksadecymalną koloru.
+     */
     private String getHexColor(double red, double green, double blue) {
         return "#" + Integer.toHexString((int) red) +
                 Integer.toHexString((int) green) +
                 Integer.toHexString((int) blue);
     }
 
+    /**
+     * Tworzy <tt>CheckBox</tt> z sterujący widocznością podanego kanału na histogramie.
+     * To, czy kanał jest domyślnie widoczny, zależy od tego, czy obraz jest kolorowy,
+     * czy w odcieniach szarości:
+     * <or>
+     * <li>Obraz kolorowy - domyślnie widoczne kanały RGB</li>
+     * <li>Obraz szaroodcieniowy - domyślnie widoczny poziom szarości</li>
+     * </or>
+     *
+     * @param channel kanał, dla ktorego tworzony jest <tt>CheckBox</tt>
+     * @return <tt>CheckBox</tt> z podanym kanałem
+     */
     private CheckBox createChannelVisibilityCheckbox(ChannelProperties.Channel channel) {
-        CheckBox checkBox = new CheckBox(channel.getName());
         boolean isVisible = GRAY.equals(channel) == histogram.isGrayscale();
+
+        CheckBox checkBox = new CheckBox(channel.getName());
         checkBox.setSelected(isVisible);
         if (!isVisible) {
             chart.getStyleClass().add(channel.getUncheckedClass());
         }
 
-        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                chart.getStyleClass().remove(channel.getUncheckedClass());
-            } else {
-                chart.getStyleClass().add(channel.getUncheckedClass());
-            }
-        });
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue)
+                -> handleSelectedChange(channel, newValue));
+
         return checkBox;
     }
 
+    /**
+     * Obsługuje zaznaczenie lub odznaczenie <tt>CheckBoxa</tt>. Nadaje lub usuwa
+     * klasę CSS dla odpowiedniego kanału na wykresie.
+     *
+     * @param channel  kanał, którego dotyczy akcja
+     * @param newValue nowa wartość zaznaczenia
+     */
+    private void handleSelectedChange(ChannelProperties.Channel channel, Boolean newValue) {
+        if (newValue) {
+            chart.getStyleClass().remove(channel.getUncheckedClass());
+        } else {
+            chart.getStyleClass().add(channel.getUncheckedClass());
+        }
+    }
+
+    /**
+     * Zamyka okno histogramu.
+     */
     public void close() {
         histogramStage.close();
     }
 
+    /**
+     * Konstruktor okna histogramu bez opcji - tylko wykres.
+     *
+     * @param imageView z obrazem, dla którego utworzony będzie histogram.
+     * @throws ImageNotLoadedYetException jeśli na obrazie zostanie wykonana operacji,
+     *                                    zanim zostanie załadowany w całości.
+     * @throws IOException                w razie błędu odczytu pliku
+     * @throws ImageIsTooBigException     jeśli otwarty obraz ma zbyt duży rozmiar
+     */
     public HistogramWindow(ImageView imageView) throws ImageNotLoadedYetException, IOException, ImageIsTooBigException {
         CategoryAxis xAxis = new CategoryAxis();
         xAxis.setAnimated(false);
