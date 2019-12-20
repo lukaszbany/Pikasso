@@ -31,7 +31,7 @@ public class AboutWindow {
         Label appName = new Label("Pikasso");
         appName.setFont(new Font("Arial", 30));
 
-        Label appVersion = new Label("v. 1.0");
+        Label appVersion = new Label("v. 1.0.1");
         appName.setFont(new Font("Arial", 20));
 
         VBox appDataVBox = new VBox(appName, appVersion);

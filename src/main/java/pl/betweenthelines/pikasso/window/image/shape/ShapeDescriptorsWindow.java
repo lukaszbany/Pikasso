@@ -21,6 +21,7 @@ import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
+import pl.betweenthelines.pikasso.exception.ImageIsNotBinaryException;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
 import pl.betweenthelines.pikasso.window.HistogramWindow;
 import pl.betweenthelines.pikasso.window.image.FileData;
@@ -42,6 +43,11 @@ public class ShapeDescriptorsWindow {
      * Minimalna wysokość okna.
      */
     private static final int MINIMAL_HEIGHT = 550;
+
+    /**
+     * Indeks obiektu na liście konturów.
+     */
+    public static final int OBJECT_INDEX = 1;
 
     /**
      * Podgląd obrazu.
@@ -151,7 +157,7 @@ public class ShapeDescriptorsWindow {
      *
      * @param openedFileData dane o otwartym pliku.
      */
-    public ShapeDescriptorsWindow(FileData openedFileData) {
+    public ShapeDescriptorsWindow(FileData openedFileData) throws ImageIsNotBinaryException {
         image = ImageUtils.binarize(openedFileData.getImageView().getImage());
         createImageView();
         HBox imageViewHbox = new HBox(imageView);
@@ -239,7 +245,7 @@ public class ShapeDescriptorsWindow {
      * binarny, wszystkie piksele o poziomie jasności > 0 są traktowane jako poziom
      * nie zerowy.
      */
-    private void calculateShapeDescriptors() {
+    private void calculateShapeDescriptors() throws ImageIsNotBinaryException {
         Mat mat = ImageUtils.imageToMat(image);
         ImageUtils.binarize(mat);
         image = ImageUtils.mat2Image(mat);
@@ -342,7 +348,7 @@ public class ShapeDescriptorsWindow {
      * @param mat     obraz
      * @param moments wartości momentów
      */
-    private void calculateContoursAndHelperValues(Mat mat, Moments moments) {
+    private void calculateContoursAndHelperValues(Mat mat, Moments moments) throws ImageIsNotBinaryException {
         double cx = moments.m10 / moments.m00;
         double cy = moments.m01 / moments.m00;
         center = new Point(cx, cy);
@@ -350,7 +356,11 @@ public class ShapeDescriptorsWindow {
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
         Imgproc.findContours(mat, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        MatOfPoint objectContour = contours.get(1);
+        if (contours.size() < 2) {
+            throw new ImageIsNotBinaryException();
+        }
+
+        MatOfPoint objectContour = contours.get(OBJECT_INDEX);
         MatOfPoint2f objectContour2f = new MatOfPoint2f(objectContour.toArray());
         s = Imgproc.contourArea(objectContour);
         l = Imgproc.arcLength(objectContour2f, true);
