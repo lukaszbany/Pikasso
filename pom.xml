@@ -6,7 +6,7 @@
 
     <groupId>pl.betweenthelines.pikasso</groupId>
     <artifactId>Pikasso</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 
     <properties>
         <mainClass>pl.betweenthelines.pikasso.Main</mainClass>
