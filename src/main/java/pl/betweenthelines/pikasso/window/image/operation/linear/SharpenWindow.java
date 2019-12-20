@@ -400,7 +400,7 @@ public class SharpenWindow {
     private Image applyMask(Mask3x3 mask) {
         Mat image = ImageUtils.imageToMat(before);
 
-        if (mask.getKernelSize() == 1) {
+        if (mask.getKernelSize() == 1 && currentScalingMethod == METHOD_3) {
             applyMask(mask, image);
         } else {
             applyMaskWithColorConversion(mask, image);

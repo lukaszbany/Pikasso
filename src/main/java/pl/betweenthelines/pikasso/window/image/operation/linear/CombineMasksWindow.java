@@ -522,7 +522,8 @@ public class CombineMasksWindow {
      */
     private void applyMasks(Mat image) {
         if (currentMaskA.getKernelSize() == 0 ||
-                currentMaskB.getKernelSize() == 0) {
+                currentMaskB.getKernelSize() == 0 ||
+                currentScalingMethod != METHOD_3) {
             Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
         }
 
@@ -543,7 +544,7 @@ public class CombineMasksWindow {
      * @param image obiekt Mat z obrazem
      */
     private void applyCombinedMask(Mat image) {
-        if (combinedMask.getKernelSize() == 0) {
+        if (combinedMask.getKernelSize() == 0 || currentScalingMethod != METHOD_3) {
             Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
         }
 

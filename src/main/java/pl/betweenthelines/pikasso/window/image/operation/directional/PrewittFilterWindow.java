@@ -11,7 +11,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.opencv.core.*;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import pl.betweenthelines.pikasso.error.ErrorHandler;
 import pl.betweenthelines.pikasso.utils.ImageUtils;
@@ -288,14 +290,5 @@ public class PrewittFilterWindow {
 
         MatScalingUtils.scale(image, currentScalingMethod);
     }
-
-//    public void apply(Mat image, Mask3x3 mask) {
-//        Imgproc.GaussianBlur(image, image, new Size(3, 3), 0);
-//        Imgproc.filter2D(image, image, CV_32F, mask.getMat(), new Point(-1, -1), 0, currentBorderType);
-//        if (border != null) {
-//            Mat submat = image.submat(1, image.height() - 1, 1, image.width() - 1);
-//            copyMakeBorder(submat, image, 1, 1, 1, 1, BORDER_ISOLATED, border);
-//        }
-//    }
 
 }
