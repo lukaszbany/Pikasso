@@ -15,6 +15,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 
+import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
+
 /**
  * Klasa pomocnicza do wykonywania operacji na obrazie, takich jak
  * konwersja pomiędzy obiektami obsługiwanymi przez JavaFX lub obiektami
@@ -114,5 +116,22 @@ public class ImageUtils {
         Imgproc.cvtColor(inImage, outImage, Imgproc.COLOR_BGR2GRAY);
 
         return ImageUtils.mat2Image(outImage);
+    }
+
+    /**
+     * Zamienia obraz na szaro-odcieniowy i binaryzuje go.
+     *
+     * @param image obraz do zbinaryzowania
+     */
+    public static void binarize(Mat image) {
+        Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.threshold(image, image, 0, 255, THRESH_BINARY);
+    }
+
+    public static Image binarize(Image image) {
+        Mat mat = imageToMat(image);
+        binarize(mat);
+
+        return mat2Image(mat);
     }
 }

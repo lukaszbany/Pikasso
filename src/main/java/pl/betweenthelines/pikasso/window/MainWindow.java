@@ -34,10 +34,12 @@ import pl.betweenthelines.pikasso.window.image.operation.directional.SobelFilter
 import pl.betweenthelines.pikasso.window.image.operation.linear.*;
 import pl.betweenthelines.pikasso.window.image.operation.median.MedianFilterWindow;
 import pl.betweenthelines.pikasso.window.image.operation.morphology.MorphologyWindow;
+import pl.betweenthelines.pikasso.window.image.operation.morphology.ThinningWindow;
 import pl.betweenthelines.pikasso.window.image.operation.onearg.NegationWindow;
 import pl.betweenthelines.pikasso.window.image.operation.onearg.PosterizeWindow;
 import pl.betweenthelines.pikasso.window.image.operation.onearg.StretchToRangeWindow;
 import pl.betweenthelines.pikasso.window.image.operation.onearg.ThresholdOneArgWindow;
+import pl.betweenthelines.pikasso.window.image.shape.ShapeDescriptorsWindow;
 
 import javax.imageio.ImageIO;
 import javax.media.jai.PlanarImage;
@@ -185,7 +187,13 @@ public class MainWindow {
     private void createMenu() {
         menuBar = new MenuBar();
         imageView = new ImageView();
-        menuBar.getMenus().addAll(createFileMenu(), createEditMenu(), createImageMenu(), createOperationsMenu());
+        menuBar.getMenus().addAll(
+                createFileMenu(),
+                createEditMenu(),
+                createImageMenu(),
+                createOperationsMenu(),
+                createAboutMenu()
+        );
     }
 
     /**
@@ -202,18 +210,57 @@ public class MainWindow {
         Menu linear = createLinear();
         Menu median = createMedian();
         Menu directional = createDirectional();
-        MenuItem morphologicalOperations = createMorphologicalOperationsMenu();
+        MenuItem morphologicalOperations = createMorphologicalOperationsMenuItem();
+        MenuItem thinning = createThinningMenuItem();
 
-        operationsMenu.getItems().addAll(desaturate, separator1, oneArg, linear, median, directional, morphologicalOperations);
+        operationsMenu.getItems().addAll(
+                desaturate,
+                separator1,
+                oneArg,
+                linear,
+                median,
+                directional,
+                morphologicalOperations,
+                thinning);
         return operationsMenu;
     }
 
     /**
-     * Tworzy menu z operacjami morfologicznymi.
+     * Tworzy menu z informacjami o programie
      *
-     * @return menu z operacjami morfologicznymi
+     * @return menu informacji o programie
      */
-    private MenuItem createMorphologicalOperationsMenu() {
+    private Menu createAboutMenu() {
+        Menu aboutMenu = new Menu("O programie");
+
+        aboutMenu.getItems().addAll(createAboutMenuItem());
+        return aboutMenu;
+    }
+
+    /**
+     * Tworzy opcję menu z informacjami o programie
+     *
+     * @return MenuItem z informacjami o programie
+     */
+    private MenuItem createAboutMenuItem() {
+        MenuItem about = new MenuItem("Informacje o programie");
+
+        about.setOnAction(event -> {
+            try {
+                AboutWindow aboutWindow = new AboutWindow();
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+        return about;
+    }
+
+    /**
+     * Tworzy opcję menu z operacjami morfologicznymi.
+     *
+     * @return opcja z operacjami morfologicznymi
+     */
+    private MenuItem createMorphologicalOperationsMenuItem() {
         MenuItem morphologicalOperations = new MenuItem("Operacje morfologiczne");
         enabledWhenFileOpended.add(morphologicalOperations);
         morphologicalOperations.setOnAction(event -> {
@@ -227,12 +274,30 @@ public class MainWindow {
     }
 
     /**
-     * Tworzy menu z operacjami jednoargumentowymi.
+     * Tworzy opcję menu "ścienianie".
      *
-     * @return menu z operacjami jednoargumentowymi.
+     * @return opcja menu "ścienianie"
+     */
+    private MenuItem createThinningMenuItem() {
+        MenuItem thinning = new MenuItem("Ścienianie");
+        enabledWhenFileOpended.add(thinning);
+        thinning.setOnAction(event -> {
+            try {
+                ThinningWindow thinningWindow = new ThinningWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+        return thinning;
+    }
+
+    /**
+     * Tworzy menu z operacjami jednopunktowymi.
+     *
+     * @return menu z operacjami jednopunktowymi.
      */
     private Menu createOneArgMenu() {
-        Menu oneArg = new Menu("Jednoargumentowe");
+        Menu oneArg = new Menu("Jednopunktowe");
         MenuItem negation = new MenuItem("Negacja");
         enabledWhenFileOpended.add(negation);
         negation.setOnAction(event -> {
@@ -591,7 +656,7 @@ public class MainWindow {
      */
     private Menu createImageMenu() {
         Menu imageMenu = new Menu("Obraz");
-        imageMenu.getItems().add(createHistogramItem());
+        imageMenu.getItems().addAll(createHistogramItem(), createShapeDescriptorsItem());
         return imageMenu;
     }
 
@@ -618,6 +683,24 @@ public class MainWindow {
             }
         });
         return histogramItem;
+    }
+
+    /**
+     * Tworzy opcję "Cechy obiektu binarnego".
+     *
+     * @return <tt>MenuItem</tt> "Cechy obiektu binarnego".
+     */
+    private MenuItem createShapeDescriptorsItem() {
+        MenuItem descriptorsItem = new MenuItem("Cechy obiektu binarnego");
+        enabledWhenFileOpended.add(descriptorsItem);
+        descriptorsItem.setOnAction(event -> {
+            try {
+                new ShapeDescriptorsWindow(openedFileData);
+            } catch (Exception e) {
+                ErrorHandler.handleError(e);
+            }
+        });
+        return descriptorsItem;
     }
 
     /**

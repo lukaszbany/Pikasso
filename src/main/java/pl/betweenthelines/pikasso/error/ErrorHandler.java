@@ -4,10 +4,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
-import pl.betweenthelines.pikasso.exception.FileOpenException;
-import pl.betweenthelines.pikasso.exception.FileTypeNotSupported;
-import pl.betweenthelines.pikasso.exception.ImageIsTooBigException;
-import pl.betweenthelines.pikasso.exception.ImageNotLoadedYetException;
+import pl.betweenthelines.pikasso.exception.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,6 +36,7 @@ public class ErrorHandler {
         MESSAGES.put(FileOpenException.class, "Problem z odczytem z pliku!");
         MESSAGES.put(FileTypeNotSupported.class, "Nieobsługiwany typ pliku!");
         MESSAGES.put(ImageIsTooBigException.class, "Obraz jest za duży!");
+        MESSAGES.put(ImageIsNotBinaryException.class, "Obraz nie jest binarny!");
     }
 
     /**
